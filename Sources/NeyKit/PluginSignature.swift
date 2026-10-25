@@ -9,18 +9,19 @@ public enum PluginSignature {
     /// Dylib assinado pelo certificado fixo e íntegro (ad-hoc e adulterado falham).
     public static func isTrustedPlugin(_ binary: URL) -> Bool { check(binary, trustedLeaf) }
 
-    /// App com bundle id `id` assinado pelo certificado fixo.
+    /// App com bundle id `id` assinado pelo certificado fixo; confere também o código aninhado, em modo estrito.
     public static func isTrustedApp(_ app: URL, id: String) -> Bool {
         // id entra no texto do requisito: só caracteres de bundle id, para não injetar cláusulas.
         guard !id.isEmpty, id.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "." || $0 == "-") }) else { return false }
-        return check(app, #"identifier "\#(id)" and \#(trustedLeaf)"#)
+        return check(app, #"identifier "\#(id)" and \#(trustedLeaf)"#,
+                     flags: kSecCSCheckAllArchitectures | kSecCSCheckNestedCode | kSecCSStrictValidate)
     }
 
-    private static func check(_ url: URL, _ requirement: String) -> Bool {
+    private static func check(_ url: URL, _ requirement: String, flags: UInt32 = kSecCSCheckAllArchitectures) -> Bool {
         var code: SecStaticCode?, req: SecRequirement?
         guard SecStaticCodeCreateWithPath(url as CFURL, [], &code) == errSecSuccess, let code,
               SecRequirementCreateWithString(requirement as CFString, [], &req) == errSecSuccess, let req
         else { return false }
-        return SecStaticCodeCheckValidity(code, SecCSFlags(rawValue: kSecCSCheckAllArchitectures), req) == errSecSuccess
+        return SecStaticCodeCheckValidity(code, SecCSFlags(rawValue: flags), req) == errSecSuccess
     }
 }
