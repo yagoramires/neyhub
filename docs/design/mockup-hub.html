@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Hub · mockup</title>
+<style>
+:root{--ac:#5ac8fa;--tv:#ff3b30;--warm:#f3c98b;--plug:#34c759;--feed:#ff6b81;--muted:#9a9ca4}
+*{box-sizing:border-box}body{margin:0;background:#0b0c0d;color:#e8e8ec;font:13px "Nunito","SF Pro Rounded",-apple-system,sans-serif;padding:28px;display:flex;flex-direction:column;gap:22px;align-items:flex-start}
+h2{font:600 11px -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8a8d96;margin:0 0 10px}
+.win{width:1100px;height:690px;display:flex;border:1px solid #26282e;border-radius:14px;overflow:hidden;background:#121315}
+.side{width:190px;background:#0f1012;border-right:1px solid #26282e;padding:16px 10px;display:flex;flex-direction:column;gap:2px;font:12px -apple-system,sans-serif}
+.brand{font-weight:800;font-size:14px;color:#fff;margin:0 6px 14px}.brand b{color:#c6ff3d}
+.nav{padding:6px 8px;border-radius:7px;color:#8a8d96}.nav.on{background:#1d1f24;color:#fff}
+.sec{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#5d6068;margin:14px 8px 4px}
+.awake{margin-top:auto;background:#1c2410;border:1px solid #3c5214;border-radius:9px;padding:7px 9px;color:#c6ff3d}
+/* área do Hub: o tema do próprio app */
+.hub{flex:1;padding:22px 26px;display:flex;flex-direction:column;gap:14px;min-width:0;
+  background:radial-gradient(600px 300px at 20% 30%,rgba(90,200,250,.10),transparent 70%),radial-gradient(500px 300px at 60% 70%,rgba(255,59,48,.10),transparent 70%),radial-gradient(400px 260px at 85% 40%,rgba(243,201,139,.10),transparent 70%),#1b1c20}
+.top{display:flex;align-items:flex-start;gap:10px}.top h1{margin:0;font-size:30px;font-weight:800;color:#fff}.top .sub{color:var(--muted);font-size:15px;margin-top:4px}
+.ib{width:40px;height:40px;border-radius:50%;background:#2a2b31;display:flex;align-items:center;justify-content:center;color:#ddd;font-size:16px}
+.tabs{display:flex;gap:6px;margin-left:auto;margin-right:6px}.tabs span{padding:8px 16px;border-radius:20px;background:#26272d;color:var(--muted);font-weight:700}.tabs .on{background:#fff;color:#111}
+.grid{display:grid;grid-template-columns:1.2fr 1.1fr .9fr;gap:14px;flex:1;min-height:0}
+.c{border-radius:26px;padding:18px;position:relative;background:#222328;border:1.5px solid #2e3036}
+.ac{border-color:#3d5f73;box-shadow:0 0 50px -18px var(--ac);background:linear-gradient(#20252b,#1f2126)}
+.tv{border-color:#6b2c2a;box-shadow:0 0 50px -18px var(--tv);background:linear-gradient(#2a1f22,#221f23)}
+.t{font-weight:800;font-size:18px;color:#fff}.s{color:var(--muted);font-size:14px;margin-top:2px}
+.pw{position:absolute;top:16px;right:16px;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;color:#0b2533}
+.big{font-size:96px;font-weight:200;color:#fff;line-height:1;margin:22px 0 6px}.big sup{font-size:24px;color:#bbb}
+.ruler{display:flex;gap:9px;align-items:flex-end;height:40px;margin:14px 0 4px}.ruler i{width:3px;border-radius:2px;background:#4a4136;height:20px}.ruler i.c2{background:var(--ac)}.ruler i.cur{height:42px;background:#fff}
+.nums{display:flex;justify-content:space-between;color:#aaa;font-weight:700;font-size:12px}
+.seg{display:flex;gap:4px;background:#2a2b31;border-radius:16px;padding:4px;margin-top:14px}.seg span{flex:1;text-align:center;padding:9px 0;border-radius:13px;color:#bbb;font-weight:800}.seg .on{background:var(--ac);color:#0b2533;flex:2.4}
+.pills{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.pills span{padding:8px 14px;border-radius:20px;background:#2c2d33;color:#ddd;font-weight:700}
+.apps{display:flex;gap:8px;margin:14px 0}.apps i{width:52px;height:52px;border-radius:12px;font-style:normal;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;color:#fff}
+.vol{display:flex;gap:8px;align-items:center}.vol .bar{flex:1;height:44px;border-radius:13px;background:#2c2a2f;position:relative;overflow:hidden}.vol .bar b{position:absolute;inset:0 80% 0 0;background:var(--tv)}.vol .bar em{position:absolute;right:14px;top:11px;font-style:normal;color:#fff;font-weight:800;font-size:16px}
+.vol .k{width:44px;height:44px;border-radius:13px;background:#33303a;display:flex;align-items:center;justify-content:center;color:#ddd;font-size:16px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.d{border-radius:20px;padding:12px;background:#222328;border:1.5px solid #2e3036;display:flex;gap:10px;align-items:center;position:relative}
+.d .o{width:38px;height:38px;border-radius:50%;background:#2e2f35;display:flex;align-items:center;justify-content:center}
+.d b{color:#fff;display:block;font-size:15px}.d small{color:var(--muted);font-size:13px}
+.d .p{margin-left:auto;width:34px;height:34px;border-radius:50%;background:#2e2f35;display:flex;align-items:center;justify-content:center;color:#aaa}
+.d.warm{background:linear-gradient(135deg,#f6dcaa,#e9c48c);border-color:#f0d29d}.d.warm b,.d.warm small{color:#3a2a12}.d.warm .o,.d.warm .p{background:#fff6e4;color:#3a2a12}
+.d.plug{border-color:#2f6a46;background:#1e2a24}.d.plug .p{background:var(--plug);color:#0d2416}
+.d.off{opacity:.55}
+.feed{display:flex;align-items:center;gap:12px}.ring{width:46px;height:46px;border-radius:50%;border:4px solid var(--feed);border-right-color:#3a3b41}
+.serve{margin-left:auto;background:var(--feed);color:#2a0b12;font-weight:900;padding:10px 18px;border-radius:14px;font-size:15px}
+.lbl{font-size:13px;color:var(--muted);font-weight:700;margin:12px 0 6px}
+.slider{height:40px;border-radius:13px;background:#2a2b31;overflow:hidden}.slider i{display:block;height:100%;width:70%;background:linear-gradient(90deg,#e9c48c,#f6dcaa)}
+.hue{height:40px;border-radius:13px;background:linear-gradient(90deg,#ffb35c,#fff3dd,#cfe6ff)}
+.row{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid #2e3036;font-size:13px}.row b{color:#fff}
+.note{color:#8a8d96;max-width:1100px;line-height:1.55;font:12px -apple-system,sans-serif}
+</style></head><body>
+
+<div>
+<h2>Tela do Hub dentro do NeyHub — com o tema do próprio Hub</h2>
+<div class="win">
+  <div class="side">
+    <div class="brand">ney<b>hub</b></div>
+    <div class="nav">Loja</div><div class="nav">Permissões</div>
+    <div class="sec">Instalados</div><div class="nav">● Dose</div><div class="nav">● Deck</div><div class="nav">● Pauta</div><div class="nav on">● Hub</div>
+    <div class="awake">☾ Acordado</div>
+  </div>
+  <div class="hub">
+    <div class="top">
+      <div><h1>Boa noite</h1><div class="sub">Ar em 23°, Luz da sala acesa, TV no YouTube, 1 sem conexão</div></div>
+      <div class="tabs"><span class="on">Casa</span><span>TV</span><span>Ração</span></div>
+      <span class="ib">↻</span><span class="ib">⚙</span>
+    </div>
+    <div class="grid">
+      <div class="c ac">
+        <div class="t">Ar do quarto</div><div class="s">Resfriando o quarto</div>
+        <div class="pw" style="background:var(--ac)">⏻</div>
+        <div style="display:flex;align-items:flex-end"><div class="big">23<sup>°C</sup></div><div style="margin-left:auto;text-align:right;color:#bbb;line-height:1.9;font-size:15px">no quarto <b style="color:#fff">27°</b><br>umidade <b style="color:#fff">58%</b></div></div>
+        <div class="ruler"><i class="c2"></i><i class="c2"></i><i class="c2"></i><i class="c2"></i><i class="c2"></i><i class="c2"></i><i class="c2"></i><i class="c2"></i><i class="cur"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="nums"><span>16</span><span>19</span><span style="color:#fff">23</span><span>25</span><span>28</span><span>30</span></div>
+        <div class="seg"><span class="on">❄ Frio</span><span>✲</span><span>💧</span><span>≋</span><span>☀</span></div>
+        <div class="pills"><span>Vento auto</span><span>WindFree</span><span>Dormir</span><span>Rápido</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;min-height:0">
+        <div class="c tv">
+          <div class="t">TV da sala</div><div class="s">YouTube aberto</div>
+          <div class="pw" style="background:var(--tv);color:#fff">⏻</div>
+          <div class="apps"><i style="background:#ff0000">▶</i><i style="background:#fff;color:#e50914">N</i><i style="background:#0f79ff">prime</i><i style="background:#0b3d5e">D+</i><i style="background:#e5002b">globo</i><i style="background:#1db954">♫</i></div>
+          <div class="vol"><div class="bar"><b></b><em>18</em></div><span class="k">↶</span><span class="k">⌂</span><span class="k">▷</span></div>
+        </div>
+        <div class="tiles">
+          <div class="d warm"><span class="o">💡</span><div><b>Luz da sala</b><small>70%</small></div><span class="p">⏻</span></div>
+          <div class="d"><span class="o">💡</span><div><b>Abajur</b><small>Apagada</small></div><span class="p">⏻</span></div>
+          <div class="d plug"><span class="o" style="color:var(--plug)">🔌</span><div><b>Tomada do PC</b><small>125 W</small></div><span class="p">⏻</span></div>
+          <div class="d off"><span class="o">⌀</span><div><b>Ventilador</b><small>Sem conexão</small></div><span class="p">⏻</span></div>
+        </div>
+        <div class="c" style="padding:14px"><div class="feed"><span class="ring"></span><div><b style="color:#fff;font-size:16px">Ração dos gatos</b><div class="s">06:00, daqui a 5 h</div></div><span class="serve">Servir</span></div></div>
+      </div>
+      <div class="c">
+        <div class="t">Luz da sala</div><div class="s">Smart Life · Sala</div>
+        <div class="lbl">Brilho</div><div class="slider"><i></i></div>
+        <div class="lbl">Cor</div><div class="hue"></div>
+        <div class="lbl">Aparelho</div>
+        <div class="row"><span>Cômodo</span><b>Sala</b></div>
+        <div class="row"><span>Conta</span><b>Smart Life</b></div>
+        <div class="row"><span>No popover</span><b>Mostrar</b></div>
+        <div class="s" style="margin-top:12px;font-size:12px">Clique num aparelho para ver o detalhe aqui.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<p class="note"><b style="color:#fff">O que mudou:</b> a área do Hub usa o tema do próprio Hub — a mesma fonte arredondada, os cards grandes com cantos bem redondos, o brilho colorido de cada aparelho e o fundo com as luzes suaves, igual ao popover de hoje. Só a barra lateral é do NeyHub. Mesmo layout de antes: ar à esquerda; TV, aparelhos e ração no meio; detalhe do aparelho à direita; abas Casa, TV (controle remoto inteiro) e Ração (plano de refeições).</p>
+</body></html>
