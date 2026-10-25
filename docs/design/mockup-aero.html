@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Aero · mockup</title>
+<style>
+:root{--bg:#121315;--card:#1a1b1f;--line:#26282e;--txt:#d6d8dd;--muted:#8a8d96;--acc:#c6ff3d;--warn:#ffb03d}
+*{box-sizing:border-box}body{margin:0;background:#0b0c0d;color:var(--txt);font:12px -apple-system,"SF Pro Text",Inter,sans-serif;padding:32px;display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start}
+h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.pop{width:280px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 20px 60px #000a}
+.head{display:flex;align-items:center;gap:8px;margin-bottom:10px}.head b{font-size:13px;color:#fff}.head .v{color:var(--muted);font-size:10px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--acc);margin-left:auto}
+.lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:10px 2px 6px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.t{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 4px 5px;text-align:center;cursor:pointer}
+.t:hover{border-color:var(--acc)}.t svg{display:block;margin:0 auto 4px}.t span{font-size:9px;color:var(--muted)}
+.t kbd{display:block;font:9px ui-monospace,monospace;color:var(--acc);margin-top:2px;min-height:11px}
+.mon{display:flex;gap:6px}.mon .t{flex:1;padding:6px 0}.mon .t.off{opacity:.35;cursor:default}.mon .t.off:hover{border-color:var(--line)}
+.warn{background:#2a2110;border:1px solid #5a4416;color:var(--warn);border-radius:9px;padding:8px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.pill{margin-left:auto;font-size:10px;padding:3px 9px;border-radius:20px;background:var(--acc);color:#111;font-weight:700}
+.foot{display:flex;gap:6px;margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.g{font-size:10px;color:var(--muted);padding:4px 8px;border-radius:6px;background:var(--card)}.g.r{margin-left:auto}
+.win{width:520px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:18px}
+.win h1{font-size:16px;color:#fff;margin:0 0 2px}.win .sub{color:var(--muted);margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px}
+.row{display:flex;align-items:center;gap:8px}.ok{color:var(--acc);margin-left:auto;font-size:11px}
+.sw{width:30px;height:17px;border-radius:9px;background:var(--acc);position:relative;margin-left:auto}.sw:after{content:"";position:absolute;right:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#111}
+table{width:100%;border-collapse:collapse;font-size:11px}td{padding:4px 0;border-bottom:1px solid var(--line)}td:last-child{text-align:right;font-family:ui-monospace,monospace;color:var(--acc)}
+.note{color:var(--muted);font-size:11px;max-width:300px;line-height:1.5}
+</style></head><body>
+
+<div>
+<h2>1 · Menu (popover) — clique no ícone</h2>
+<div class="pop">
+  <div class="head"><b>Aero</b><span class="v">0.5.0</span><span class="dot" title="funcionando"></span></div>
+  <div class="lbl">Encaixar janela em foco</div>
+  <div class="grid">
+    <div class="t"><svg width="34" height="22"><rect x=".5" y=".5" width="33" height="21" rx="3" fill="none" stroke="#555"/><rect x="2" y="2" width="15" height="18" rx="2" fill="#c6ff3d"/></svg><span>Esquerda</span><kbd>⌘←</kbd></div>
+    <div class="t"><svg width="34" height="22"><rect x=".5" y=".5" width="33" height="21" rx="3" fill="none" stroke="#555"/><rect x="17" y="2" width="15" height="18" rx="2" fill="#c6ff3d"/></svg><span>Direita</span><kbd>⌘→</kbd></div>
+    <div class="t"><svg width="34" height="22"><rect x=".5" y=".5" width="33" height="21" rx="3" fill="none" stroke="#555"/><rect x="2" y="2" width="30" height="18" rx="2" fill="#c6ff3d"/></svg><span>Maximizar</span><kbd>⌘↑</kbd></div>
+    <div class="t"><svg width="34" height="22"><rect x=".5" y=".5" width="33" height="21" rx="3" fill="none" stroke="#555"/><rect x="8" y="5" width="18" height="12" rx="2" fill="#c6ff3d"/></svg><span>Restaurar</span><kbd>⌘↓</kbd></div>
+    <div class="t"><svg width="34" height="22"><rect x=".5" y=".5" width="33" height="21" rx="3" fill="none" stroke="#555"/><rect x="2" y="2" width="15" height="9" rx="2" fill="#c6ff3d"/></svg><span>Sup. esq.</span><kbd></kbd></div>
+    <div class="t"><svg width="34" height="22"><rect x=".5" y=".5" width="33" height="21" rx="3" fill="none" stroke="#555"/><rect x="17" y="2" width="15" height="9" rx="2" fill="#c6ff3d"/></svg><span>Sup. dir.</span><kbd></kbd></div>
+    <div class="t"><svg width="34" height="22"><rect x=".5" y=".5" width="33" height="21" rx="3" fill="none" stroke="#555"/><rect x="2" y="11" width="15" height="9" rx="2" fill="#c6ff3d"/></svg><span>Inf. esq.</span><kbd></kbd></div>
+    <div class="t"><svg width="34" height="22"><rect x=".5" y=".5" width="33" height="21" rx="3" fill="none" stroke="#555"/><rect x="17" y="11" width="15" height="9" rx="2" fill="#c6ff3d"/></svg><span>Inf. dir.</span><kbd></kbd></div>
+  </div>
+  <div class="lbl">Mover para outro monitor</div>
+  <div class="mon">
+    <div class="t"><span>↑ Acima</span><kbd>⇧⌘↑</kbd></div>
+    <div class="t off"><span>↓ Abaixo</span><kbd>⇧⌘↓</kbd></div>
+    <div class="t off"><span>← Esq.</span><kbd>⇧⌘←</kbd></div>
+    <div class="t off"><span>→ Dir.</span><kbd>⇧⌘→</kbd></div>
+  </div>
+  <div class="foot"><span class="g">Ajuda ▾</span><span class="g r">Sair</span></div>
+</div>
+<p class="note">Igual ao menu de hoje, em blocos: 8 posições com o desenho do encaixe e o atalho, 4 direções de monitor (apagadas quando não há monitor naquele lado). Sem janela em foco, os blocos ficam apagados.<br>“Ajuda” abre: versão, log de depuração, reportar problema. “Sair” só no avulso — dentro do NeyHub some.<br>Saiu: “Buscar atualizações” (quem atualiza agora é o NeyHub ou o avulso sozinho) e “Abrir ao iniciar sessão” dentro do NeyHub.</p>
+</div>
+
+<div>
+<h2>1b · Mesmo popover, sem permissão</h2>
+<div class="pop">
+  <div class="head"><b>Aero</b><span class="v">0.5.0</span><span class="dot" style="background:var(--warn)"></span></div>
+  <div class="warn">Precisa de Acessibilidade<span class="pill">Conceder</span></div>
+  <div class="note" style="max-width:none">Encaixes e atalhos voltam sozinhos assim que a permissão é dada. No NeyHub, “Conceder” abre a tela de Permissões.</div>
+  <div class="foot"><span class="g">Ajuda ▾</span><span class="g r">Sair</span></div>
+</div>
+</div>
+
+<div>
+<h2>2 · Configurações — card do Aero no NeyHub / avulso reaberto com ícone escondido</h2>
+<div class="win">
+  <h1>Aero</h1><div class="sub">Encaixe de janelas estilo Windows · 0.5.0</div>
+  <div class="card"><div class="row"><b style="color:#fff">Mostrar na barra de menus</b><span class="sw"></span></div>
+    <div class="note" style="max-width:none;margin-top:6px">Escondido, o Aero continua funcionando: arrastar até a borda e os atalhos seguem valendo.</div></div>
+  <div class="card"><div class="row"><b style="color:#fff">Acessibilidade</b><span class="ok">Concedida</span></div></div>
+  <div class="card"><b style="color:#fff">Atalhos</b>
+    <table><tr><td>Metade esquerda / direita</td><td>⌘← ⌘→</td></tr><tr><td>Maximizar / restaurar</td><td>⌘↑ ⌘↓</td></tr><tr><td>Mover de monitor</td><td>⇧⌘ + setas</td></tr></table></div>
+  <div class="row" style="gap:6px"><span class="g">Mostrar log de depuração</span><span class="g">Reportar problema…</span></div>
+</div>
+<p class="note">Sem opções novas: o Aero não tem ajustes hoje. A tela só mostra o estado, os atalhos e o switch do ícone.</p>
+</div>
+</body></html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Dose · mockup</title>
+<style>
+:root{--bg:#121315;--side:#0f1012;--card:#1a1b1f;--line:#26282e;--txt:#d6d8dd;--muted:#8a8d96;--acc:#c6ff3d;--red:#ff5a5a;--teal:#2fd3c6;--org:#ff9a3d;--yel:#ffd23d;--blu:#3d9bff}
+*{box-sizing:border-box}body{margin:0;background:#0b0c0d;color:var(--txt);font:12px -apple-system,"SF Pro Text",Inter,sans-serif;padding:28px;display:flex;flex-direction:column;gap:30px;align-items:flex-start}
+h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.win{width:980px;height:600px;display:flex;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg)}
+.side{width:190px;background:var(--side);border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:2px}
+.brand{font-weight:800;font-size:14px;color:#fff;margin:0 6px 14px}.brand b{color:var(--acc)}
+.nav{padding:6px 8px;border-radius:7px;color:var(--muted)}.nav.on{background:#1d1f24;color:#fff}
+.sec{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#5d6068;margin:14px 8px 4px}
+.awake{margin-top:auto;background:#1c2410;border:1px solid #3c5214;border-radius:9px;padding:7px 9px;color:var(--acc)}
+.main{flex:1;padding:20px 22px;display:flex;flex-direction:column;min-width:0}
+.top{display:flex;align-items:flex-end;gap:12px;margin-bottom:14px}
+.top h1{font-size:18px;color:#fff;margin:0}.top .sub{color:var(--muted);margin-top:2px}
+.tabs{display:flex;gap:4px;margin-left:auto;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:3px}
+.tabs span{padding:4px 11px;border-radius:6px;color:var(--muted)}.tabs .on{background:#2a2d33;color:#fff}
+.pill{font-size:11px;padding:5px 11px;border-radius:20px;background:var(--acc);color:#111;font-weight:700}
+.cols{display:grid;grid-template-columns:1.35fr 1fr;gap:14px;flex:1;min-height:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px}
+.lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;display:flex}
+.lbl em{margin-left:auto;font-style:normal;letter-spacing:0;text-transform:none}
+.row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}
+.t{font:11px ui-monospace,monospace;color:var(--muted);width:40px}
+.chk{width:34px;height:18px;border-radius:10px;border:2px solid;position:relative;flex:none}
+.chk.done:after{content:"";position:absolute;inset:2px 2px 2px 14px;border-radius:6px;background:currentColor}
+.chk.half:after{content:"";position:absolute;inset:2px 14px 2px 2px;border-radius:6px;background:currentColor}
+.nm b{color:#fff;font-weight:600}.nm span{color:var(--muted)}.nm div{font-size:10px;color:var(--muted);margin-top:1px}
+.r{margin-left:auto;font-size:11px;color:var(--muted)}.late{color:var(--red)}.ok{color:var(--acc)}
+.chips{display:flex;gap:8px}.chip{flex:1;background:#202227;border:1px solid var(--line);border-radius:9px;padding:8px}
+.chip b{color:#fff}.chip div{font-size:10px;color:var(--muted);margin-top:2px}
+.cnt{display:flex;align-items:center;gap:10px;padding:7px 0}.cnt .n{font-size:26px;font-weight:800;width:44px;text-align:right}
+.bar{height:5px;border-radius:3px;background:#2a2d33;margin-top:5px;overflow:hidden}.bar i{display:block;height:100%}
+.grid{display:grid;grid-template-columns:110px repeat(14,1fr);gap:3px;align-items:center;font-size:10px}
+.grid .h{color:#5d6068;text-align:center}.c{height:14px;border-radius:3px;background:#24262b}.c.y{background:var(--acc)}.c.p{background:#5b7a1c}.c.m{background:#3a1c1c}
+.note{color:var(--muted);max-width:980px;line-height:1.55}
+.popnote{display:flex;gap:20px;align-items:flex-start}
+</style></head><body>
+
+<div>
+<h2>Tela do Dose dentro do NeyHub — aba Hoje</h2>
+<div class="win">
+  <div class="side">
+    <div class="brand">ney<b>hub</b></div>
+    <div class="nav">Loja</div><div class="nav">Permissões</div>
+    <div class="sec">Instalados</div><div class="nav on">● Dose</div>
+    <div class="awake">☾ Acordado</div>
+  </div>
+  <div class="main">
+    <div class="top">
+      <div><h1>Domingo, 25 de outubro</h1><div class="sub">Falta 3 de 5 · 2 atrasados</div></div>
+      <div class="tabs"><span class="on">Hoje</span><span>Histórico</span><span>Itens</span></div>
+      <span class="pill">+ Novo</span>
+    </div>
+    <div class="cols">
+      <div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+        <div class="card">
+          <div class="lbl">Agenda de hoje<em>por horário</em></div>
+          <div class="row"><span class="t"></span><span class="chk" style="color:var(--red)"></span><div class="nm"><b>Medicação semanal</b><div>Sugestão: abdômen direito</div></div><span class="r late">1 dia de atraso</span></div>
+          <div class="row"><span class="t"></span><span class="chk" style="color:var(--red)"></span><div class="nm"><b>Alongamento</b> <span>1 dose</span></div><span class="r late">2 dias de atraso</span></div>
+          <div class="row"><span class="t">09:00</span><span class="chk done" style="color:var(--org)"></span><div class="nm"><b>Vitamina D</b> <span>1 cápsula</span><div>tomada às 09:12</div></div><span class="r ok">feito</span></div>
+          <div class="row"><span class="t">20:00</span><span class="chk half" style="color:var(--teal)"></span><div class="nm"><b>Vitamina C</b> <span>5 g</span><div>1 de 2 hoje</div></div><span class="r">em 3 h</span></div>
+          <div class="row"><span class="t">20:00</span><span class="chk" style="color:var(--yel)"></span><div class="nm"><b>Ômega 3</b> <span>2 cápsulas</span></div><span class="r">em 3 h</span></div>
+        </div>
+        <div class="card">
+          <div class="lbl">Quando precisar</div>
+          <div class="chips"><div class="chip"><b>+ Chá</b><div>2× hoje · última 13:15</div></div><div class="chip"><b>+ Café</b><div>nenhum hoje</div></div></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+        <div class="card">
+          <div class="lbl">Contadores</div>
+          <div class="cnt"><span class="n" style="color:var(--blu)">12</span><div style="flex:1"><b style="color:#fff">dias sem comer doce</b><div class="bar"><i style="width:66%;background:var(--blu)"></i></div><div style="font-size:10px;color:var(--muted);margin-top:3px">Recorde: 18 dias</div></div></div>
+          <div class="cnt"><span class="n" style="color:var(--acc)">19</span><div style="flex:1"><b style="color:#fff">dias sem fast food</b><div class="bar"><i style="width:100%;background:var(--acc)"></i></div><div style="font-size:10px;color:var(--muted);margin-top:3px">Recorde atual</div></div></div>
+          <div class="cnt"><span class="n" style="color:var(--org)">3</span><div style="flex:1"><b style="color:#fff">dias sem refrigerante</b><div class="bar"><i style="width:20%;background:var(--org)"></i></div><div style="font-size:10px;color:var(--muted);margin-top:3px">Recorde: 15 dias</div></div></div>
+        </div>
+        <div class="card">
+          <div class="lbl">Últimos 7 dias<em>abrir Histórico →</em></div>
+          <div class="grid" style="grid-template-columns:96px repeat(7,1fr)">
+            <span></span><span class="h">S</span><span class="h">T</span><span class="h">Q</span><span class="h">Q</span><span class="h">S</span><span class="h">S</span><span class="h">D</span>
+            <span>Vitamina D</span><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i>
+            <span>Vitamina C</span><i class="c y"></i><i class="c p"></i><i class="c y"></i><i class="c y"></i><i class="c m"></i><i class="c y"></i><i class="c p"></i>
+            <span>Ômega 3</span><i class="c y"></i><i class="c y"></i><i class="c m"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c"></i>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:8px">■ completo &nbsp;■ parcial &nbsp;■ esquecido</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div>
+<h2>Aba Histórico</h2>
+<div class="card" style="width:760px">
+  <div class="lbl">Últimos 14 dias<em>sequência atual</em></div>
+  <div class="grid">
+    <span></span><span class="h">12</span><span class="h">13</span><span class="h">14</span><span class="h">15</span><span class="h">16</span><span class="h">17</span><span class="h">18</span><span class="h">19</span><span class="h">20</span><span class="h">21</span><span class="h">22</span><span class="h">23</span><span class="h">24</span><span class="h">25</span>
+    <span>Vitamina D <b class="ok">14</b></span><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i>
+    <span>Vitamina C <b class="ok">1</b></span><i class="c y"></i><i class="c y"></i><i class="c m"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c y"></i><i class="c p"></i><i class="c y"></i><i class="c y"></i><i class="c m"></i><i class="c y"></i><i class="c p"></i>
+    <span>Med. semanal</span><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c y"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c m"></i><i class="c"></i><i class="c"></i>
+  </div>
+  <div class="row" style="margin-top:10px"><div class="nm"><b>Medicação semanal</b><div>Última aplicação: há 8 dias, coxa esquerda · rodízio sugere abdômen direito</div></div></div>
+</div>
+</div>
+
+<div class="popnote">
+<p class="note"><b style="color:#fff">O que muda em relação ao popover:</b> nada some — é a mesma coisa, só que com espaço. A aba <b>Hoje</b> junta numa tela a agenda (atrasados no topo, depois por horário), os “quando precisar” como botões grandes, os contadores e uma faixa dos últimos 7 dias. <b>Histórico</b> vira uma grade de 14 dias por item, com a sequência e o rodízio de local. <b>Itens</b> é a lista com o mesmo formulário de hoje (nome, dose, horários, lembrete, cor), aberto ao lado em vez de por cima. O popover da barra continua igual ao de hoje, só no tema Grafite.</p>
+</div>
+</body></html>
