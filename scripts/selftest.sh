@@ -9,10 +9,17 @@ cmp -s catalog.json Resources/catalog.json || { echo "✗ catalog.json e Resourc
 cmp -s templates/release-app.sh scripts/release.sh || { echo "✗ scripts/release.sh diferente de templates/release-app.sh" >&2; exit 1; }
 
 ERR=$(mktemp)
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+NHTMP=${${TMPDIR:-/tmp}:A}
+# As cópias do NeyHub.app do teste do Updater entram no LaunchServices (e reivindicam hubmac): saem antes do rm.
+# Pela lista do -dump, não pelas pastas: o próprio selftest já apaga algumas, e o registro fica.
+registered() { $LSREGISTER -dump | sed -n "s#^path: *\($NHTMP/nh-.*\.app\) (0x[0-9a-f]*)\$#\1#p" | sort -u || true }
+unregister() { registered | while read -r app; do $LSREGISTER -u "$app" 2>/dev/null || true; done }
 cleanup() {
   rm -f "$ERR"
   rm -f ~/Library/Preferences/neyhub.selftest.*(N)
-  rm -rf "${TMPDIR:-/tmp}"/nh-*(N)
+  unregister
+  rm -rf "$NHTMP"/nh-*(N)
 }
 trap cleanup EXIT
 
@@ -48,6 +55,9 @@ if (( rc != 0 )); then
   cat "$ERR" >&2
   exit $rc
 fi
+unregister
+LEFT=$(registered)
+[[ -z "$LEFT" ]] || { echo "✗ cópia do teste ainda registrada no LaunchServices:" >&2; echo "$LEFT" >&2; exit 1; }
 
 # --- release: changelog-section.sh e --validate-manifest ---
 CL="$FIX/CHANGELOG.md"

@@ -4,12 +4,18 @@ Loja e hub dos meus apps de barra de menus do macOS: instala, atualiza e usa cad
 
 [Baixar a última versão](https://github.com/yagoramires/neyhub/releases/latest) · [Reportar problema](https://github.com/yagoramires/neyhub/issues/new)
 
-Cada app continua sendo um repositório separado e funciona sozinho, fora do NeyHub. Na 0.1.0 a Loja tem dois:
+Cada app continua sendo um repositório separado e funciona sozinho, fora do NeyHub. Na 0.1.0 a Loja tem seis:
 
 | App | O que faz |
 |---|---|
 | [Aero](https://github.com/yagoramires/aero) | Encaixe de janelas como no Windows (só barra de menus). |
 | [Dose](https://github.com/yagoramires/dose) | Remédios e suplementos do dia (barra de menus e tela). |
+| [Capture](https://github.com/yagoramires/capture) | Prints e gravação de tela pela barra de menus (só barra de menus). |
+| [Deck](https://github.com/yagoramires/deck) | Configura o fifine AmpliGame D6 (barra de menus e tela). |
+| [Pauta](https://github.com/yagoramires/pauta) | Slack, GitHub e Jira num lugar só (barra de menus e tela). |
+| [Hub](https://github.com/yagoramires/hub) | Casa conectada: Tuya, SmartThings e Android TV (barra de menus e tela). Exige macOS 15. |
+
+Um app que ainda não tem release aparece na Loja como **Em breve**, sem o botão **Instalar**.
 
 ## Instalar
 
@@ -21,26 +27,35 @@ O NeyHub entra nos itens de login na primeira vez que abre e continua rodando qu
 
 Se o app avulso estiver aberto, o NeyHub pergunta antes de iniciar o plugin: **Fechar** encerra o avulso e segue pelo NeyHub; **Agora não** deixa o app pausado no card. Pausado ao abrir o NeyHub, ele começa sozinho assim que o avulso fechar. Pausado com o app em uso, ele só volta reiniciando: o card mostra **Pausado — reinicie o NeyHub para voltar** com o botão **Reiniciar NeyHub**.
 
-Para desinstalar um app, abra o card dele na Loja e clique em **Desinstalar**: ele para na hora e a pasta some no próximo início. Reinstalar na mesma sessão também fica para o próximo início.
+Para desinstalar um app, abra o card dele na Loja e clique em **Desinstalar**: ele para na hora, os avisos dele saem da Central de Notificações e a pasta some no próximo início. Reinstalar na mesma sessão também fica para o próximo início. Sair ou reiniciar o NeyHub não apaga os avisos.
 
-Requer macOS 14 ou mais novo, Apple Silicon ou Intel.
+Requer macOS 14 ou mais novo, Apple Silicon ou Intel. O Hub exige macOS 15: num macOS 14 o card dele mostra **Precisa do macOS 15.0**.
 
 ## Permissões
 
 Os apps rodam dentro do NeyHub, então o macOS pede as permissões para o NeyHub, não para cada app. A tela **Permissões** lista o que os apps instalados precisam, quem usa cada uma e se já está concedida; **Conceder** abre o painel exato dos Ajustes do Sistema. Conceda uma vez: a permissão continua valendo depois das atualizações, porque o NeyHub é sempre assinado com o mesmo certificado.
 
-- **Acessibilidade**: para o Aero mover e redimensionar janelas.
-- **Notificações**: para os lembretes do Dose. Os avisos de todos os apps passam pelo NeyHub.
-- **Gravação de Tela**: listada só quando algum app instalado precisa.
+A tela lista só as permissões que algum app instalado usa:
+
+- **Acessibilidade**: para o Aero mover e redimensionar janelas e para as teclas de atalho e de mídia do Deck.
+- **Notificações**: para os lembretes do Dose e os avisos do Pauta. Os avisos de todos os apps passam pelo NeyHub, e o toque leva ao app (mesmo quando o toque é que abre o NeyHub).
+- **Gravação de Tela**: para o Capture.
+- **Microfone**: opcional, só para o Capture com **Gravar o microfone** ligado. O próprio Capture avisa quando falta.
+- **Rede local**: para o Hub achar e controlar a Android TV. Não aparece na tela: o macOS pergunta sozinho na primeira vez que o Hub procura a TV.
 
 Nenhum app pede permissão no meio do uso: quando falta, ele mostra o aviso e leva para essa tela. Um ponto ao lado de **Permissões** na barra lateral avisa que falta alguma.
 
 O app avulso (fora do NeyHub) continua com as permissões dele, à parte.
 
+## Retorno de login
+
+O login do SmartThings no Hub volta para o Mac por um link `hubmac://`, e quem atende é o NeyHub: ele entrega ao Hub que roda dentro dele. Se o Hub avulso estiver aberto (o plugin fica pausado), o NeyHub repassa o link para ele. Se nenhum app esperava o login, aparece **Nenhum app esperava este login**; é só abrir o app que pediu e tentar de novo. Um link que chega enquanto o NeyHub ainda está abrindo espera os apps iniciarem.
+
 ## Como usar
 
 - **Loja**: o catálogo de apps. Cada card mostra a versão instalada ou disponível e a ação **Instalar**, **Atualizar** ou **Abrir**. Clicar no card abre o detalhe: modo de exibição, configurações do app, novidades de cada versão e **Desinstalar**.
 - **Instalados** (barra lateral): os apps com tela. Clicar abre a tela do app dentro da janela do NeyHub, com o modo de exibição no topo.
+- A janela abre com 1100 × 680 na primeira vez (a Casa do Hub cabe em 3 colunas) e depois lembra o tamanho e a posição.
 - **Acordado** (rodapé da barra lateral): não deixa o Mac dormir, nem com a tampa fechada. Fica verde quando ligado.
   - Na primeira vez que você liga, o macOS pede sua senha de administrador **uma vez**. O NeyHub instala uma regra em `/etc/sudoers.d/neyhub` que libera só dois comandos, `pmset -a disablesleep 1` e `pmset -a disablesleep 0`, sem senha, só para o seu usuário. Depois disso ligar e desligar não pede mais nada.
   - Só desliga quando você manda. Fechar a janela ou sair do NeyHub não desliga.
@@ -71,7 +86,7 @@ Cada app escolhe onde aparece, no detalhe do card na Loja (ou no topo da tela do
 
 O próprio NeyHub tem ícone no Dock e na barra de menus (ícone `square.grid.2x2`), os dois ligados por padrão; para ocultar cada um use o menu do ícone ou o menu **NeyHub**. Sempre sobra um dos dois (apagar o último religa o outro).
 
-App sem tela (como o Aero) só tem **Mostrar na barra de menus**. Esconder o ícone nunca desliga o app: o Aero continua encaixando e o Dose continua lembrando.
+App sem tela (como o Aero e o Capture) só tem **Mostrar na barra de menus**. Esconder o ícone nunca desliga o app: o Aero continua encaixando e o Dose continua lembrando.
 
 ## Atualizações
 

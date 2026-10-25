@@ -19,6 +19,8 @@ final class HubModel: ObservableObject {
     let host = HostBridge()
     /// O AppDelegate liga ao `Notifications`; o selftest conta as chamadas (sem tocar no centro de notificações real).
     var registerCategories: () -> Void = {}
+    /// O AppDelegate liga ao `Notifications.removeDelivered`: desinstalar tira os avisos do plugin da Central.
+    var removeDelivered: (String) -> Void = { _ in }
 
     // Loja (StoreView.swift)
     let store: PluginStore

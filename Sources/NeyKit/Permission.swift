@@ -44,7 +44,7 @@ public enum Permission: String, Codable, CaseIterable {
         case .accessibility: _ = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
         case .screenRecording: _ = CGRequestScreenCaptureAccess()
         case .notifications: UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
-        case .microphone: AVCaptureDevice.requestAccess(for: .audio) { _ in DispatchQueue.main.async { NSWorkspace.shared.open(settingsURL) } }
+        case .microphone: AVCaptureDevice.requestAccess(for: .audio) { _ in } // os Ajustes quem abre é a tela (abrir aqui abria duas vezes)
         }
     }
 }

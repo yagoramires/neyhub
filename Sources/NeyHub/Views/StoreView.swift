@@ -95,9 +95,9 @@ extension HubModel {
         }
     }
 
-    /// Pausado ou que não carregou não está em `loaded`: só marca.
+    /// Pausado ou que não carregou não está em `loaded`: só marca (e tira os avisos de uma sessão anterior).
     @MainActor func uninstall(_ id: String) {
-        if let p = loaded.first(where: { $0.manifest.id == id }) { PluginHost.uninstall(p, store: store, model: self) } else { store.markForRemoval(id: id) }
+        if let p = loaded.first(where: { $0.manifest.id == id }) { PluginHost.uninstall(p, store: store, model: self) } else { store.markForRemoval(id: id); removeDelivered(id) }
         PluginHost.forget(id) // pausado não começa quando o avulso fechar
         staged[id] = nil
         problems[id] = nil // sem "Pausado" velho no card

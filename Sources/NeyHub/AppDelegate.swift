@@ -6,7 +6,7 @@ import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let model: HubModel
-    private lazy var notifications = Notifications(model: model)
+    lazy var notifications = Notifications(model: model)
     private var window: NSWindow?
     let presence = HubPresenceController()
     private var awakeItem: AwakeStatusItem?
@@ -40,6 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         notifications.install()
         model.registerCategories = { [notifications] in notifications.registerCategories() }
+        model.removeDelivered = { [notifications] in notifications.removeDelivered(of: $0) }
         model.host.onOpenPermissions = { [self] in model.route = .permissions; showWindow() }
         model.host.onShowScreen = { [self] id in model.showScreen(id); showWindow() }
         offerLoginItem()
@@ -76,13 +77,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @MainActor func finishStart() {
         started = true
+        notifications.finishStart()
         let urls = pendingURLs; pendingURLs = []
         handle(urls)
     }
 
+    /// Hub avulso aberto; o selftest troca para nunca mandar URL ao app de verdade.
+    var hubApp: @MainActor () -> URL? = { PluginHost.conflict(id: "local.hub")?.bundleURL }
+
     /// Um alerta por lote, não um por URL; todas as URLs são roteadas.
     @MainActor func handle(_ urls: [URL]) {
-        if !urls.filter({ !PluginHost.route($0, model: model) }).isEmpty { onUnhandled() }
+        let left = urls.filter { !PluginHost.route($0, model: model) }
+        switch PluginHost.leftover(left, hubApp: left.isEmpty ? nil : hubApp()) {
+        case .nothing: break
+        case .forward(let app): NSWorkspace.shared.open(left, withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration())
+        case .alert: onUnhandled()
+        }
     }
 
     func windowWillClose(_ notification: Notification) {

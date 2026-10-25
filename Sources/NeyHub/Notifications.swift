@@ -32,19 +32,49 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
         UNUserNotificationCenter.current().setNotificationCategories(Self.merge(lists))
     }
 
+    /// Ids dos avisos na Central e a remoção; o selftest troca para nunca tocar na central de verdade.
+    var delivered: (@escaping ([String]) -> Void) -> Void = { done in
+        UNUserNotificationCenter.current().getDeliveredNotifications { done($0.map(\.request.identifier)) }
+    }
+    var remove: ([String]) -> Void = { UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: $0) }
+
+    /// Desinstalar tira da Central os avisos do plugin. O `stop()` não tira: sair do NeyHub também o chama.
+    @MainActor func removeDelivered(of id: String) {
+        let ids = model.loaded.map(\.manifest.id) + [id], remove = remove
+        delivered { list in
+            let mine = list.filter { Self.owner(of: $0, among: ids) == id }
+            if !mine.isEmpty { remove(mine) }
+        }
+    }
+
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                 withCompletionHandler done: @escaping () -> Void) {
         let identifier = response.notification.request.identifier, action = response.actionIdentifier
         nonisolated(unsafe) let done = done
         DispatchQueue.main.async {
             MainActor.assumeIsolated {
-                let ids = self.model.loaded.map(\.manifest.id)
-                if let id = Self.owner(of: identifier, among: ids), let p = self.model.loaded.first(where: { $0.manifest.id == id }) {
-                    p.plugin.handleNotification?(identifier: identifier, actionIdentifier: action)
-                }
+                self.receive(identifier, action)
                 done()
             }
         }
+    }
+
+    /// Toques que chegaram antes de os plugins iniciarem (o aviso pode abrir o NeyHub): entregues no `finishStart`.
+    private var pending: [(identifier: String, action: String)] = []
+    private var started = false
+
+    @MainActor func receive(_ identifier: String, _ action: String) {
+        guard started else { return pending.append((identifier, action)) }
+        let ids = model.loaded.map(\.manifest.id)
+        if let id = Self.owner(of: identifier, among: ids), let p = model.loaded.first(where: { $0.manifest.id == id }) {
+            p.plugin.handleNotification?(identifier: identifier, actionIdentifier: action)
+        }
+    }
+
+    @MainActor func finishStart() {
+        started = true
+        let queued = pending; pending = []
+        for t in queued { receive(t.identifier, t.action) }
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,

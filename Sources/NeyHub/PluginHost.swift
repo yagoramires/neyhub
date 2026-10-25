@@ -80,6 +80,13 @@ enum PluginHost {
         model.loaded.contains { $0.plugin.handleURL?(url) ?? false }
     }
 
+    enum Leftover: Equatable { case nothing, forward(URL), alert }
+
+    /// URLs que nenhum plugin tratou: com o Hub avulso aberto (plugin pausado) o login é dele; senão, o alerta.
+    static func leftover(_ urls: [URL], hubApp: URL?) -> Leftover {
+        urls.isEmpty ? .nothing : hubApp.map(Leftover.forward) ?? .alert
+    }
+
     // MARK: - Início
 
     /// Chamar depois do `applyPending`. Avulso aberto pergunta antes; quem não carrega ganha o motivo no card.
@@ -229,6 +236,7 @@ enum PluginHost {
     /// Sair do NeyHub: `stop()` em cada plugin iniciado, uma vez só. Pausados nunca começaram e os parados por
     /// conflito já saíram de `loaded`. Um `stop()` pode demorar (o Capture espera até ~5 s a gravação fechar).
     /// Exceção ObjC ou crash dentro do plugin não dá para pegar daqui: o log diz em qual parou.
+    /// Os avisos entregues ficam na Central (só `uninstall` tira).
     static func stopAll(_ model: HubModel) {
         let all = model.loaded
         model.loaded = []
@@ -243,6 +251,7 @@ enum PluginHost {
 
     static func uninstall(_ p: LoadedPlugin, store: PluginStore, model: HubModel) {
         p.plugin.stop()
+        model.removeDelivered(p.manifest.id) // aqui e não no stop() do plugin: sair também chama o stop()
         store.markForRemoval(id: p.manifest.id)
         drop(p, model: model)
     }

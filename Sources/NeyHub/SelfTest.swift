@@ -18,6 +18,7 @@ enum SelfTest {
         hubPresence()
         minMacOS()
         lifecycle()
+        loginAndTaps()
         if let fixture { plugins(fixture); storeInstall(fixture); storeUpdates(fixture) } else { FileHandle.standardError.write(Data("sem --fixture: pulando carga de plugins\n".utf8)) }
     }
 
@@ -173,6 +174,7 @@ enum SelfTest {
         precondition(!PluginHost.route(URL(string: "hubmac://callback?code=x")!, model: HubModel()), "sem plugins carregados")
         // URL que chega antes do startAll espera e é roteada depois, sem alerta; lote sem aceitante alerta uma vez só.
         let delegate = AppDelegate(); delegate.model.loaded = model.loaded
+        delegate.hubApp = { nil } // o Hub avulso de verdade pode estar aberto: nunca recebe URL de teste
         var alerts = 0; delegate.onUnhandled = { alerts += 1 }
         delegate.application(NSApp, open: [URL(string: "hubmac://callback?code=x")!])
         precondition(delegate.pendingURLs.count == 1 && alerts == 0)
@@ -258,16 +260,26 @@ enum SelfTest {
         noScreen.showScreen(m.id)
         precondition(noScreen.route == .store && noScreen.detail == m.id, "sem tela devia abrir o card")
 
+        // Desinstalar tira da Central só os avisos `local.hello.*` (central falsa: nada sai da de verdade).
+        let center = Notifications(model: model)
+        var removed: [String] = []
+        center.delivered = { $0(["local.hello.1", "local.hello.a.b", "local.hellox.1", "local.dose.1", "local.hello"]) }
+        center.remove = { removed += $0 }
+        model.removeDelivered = { center.removeDelivered(of: $0) }
         model.route = .app("local.hello")
         PluginHost.uninstall(p, store: store, model: model)
+        precondition(removed == ["local.hello.1", "local.hello.a.b"], "\(removed)")
         precondition(count("stopCount") == 1)
         precondition(fm.fileExists(atPath: root.appendingPathComponent("Remove/local.hello").path))
         precondition(model.loaded.isEmpty && model.sidebarApps.isEmpty && model.route == .store)
         precondition(active() == [], "active.json não tirou o desinstalado")
         // Desinstalar de novo (já fora de `loaded`): não chama stop() outra vez e limpa o "Pausado" do card.
+        // Fora de `loaded` (pausado, não carregou) também tira os avisos de uma sessão anterior.
         model.problems["local.hello"] = PluginHost.paused
+        removed = []
         model.uninstall("local.hello")
         precondition(count("stopCount") == 1 && model.problems["local.hello"] == nil)
+        precondition(removed == ["local.hello.1", "local.hello.a.b"], "\(removed)")
     }
 }
 
@@ -350,9 +362,12 @@ extension SelfTest {
         let (f, pf) = fake("local.falso.f")
         PluginHost.pause(pf, model: model)
         fm.createFile(atPath: PluginHost.activeURL(model.store).path, contents: Data("[]".utf8))
+        var removals: [String] = []
+        model.removeDelivered = { removals.append($0) } // sair não é desinstalar: os avisos ficam na Central
         let quitting = AppDelegate(model: model)
         quitting.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
         precondition(a.stops == 1 && c.stops == 1 && f.stops == 0 && b.stops == 0 && d.stops == 0, "stop ao sair: a=\(a.stops) c=\(c.stops)")
+        precondition(removals.isEmpty, "sair tirou avisos da Central: \(removals)")
         precondition(model.loaded.isEmpty && !fm.fileExists(atPath: PluginHost.activeURL(model.store).path))
         quitting.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
         precondition(a.stops == 1, "stop duas vezes")
@@ -376,6 +391,30 @@ extension SelfTest {
         let actions = Set(items.compactMap { $0.action.map(NSStringFromSelector) })
         precondition(actions.isSuperset(of: ["undo:", "redo:", "cut:", "copy:", "paste:", "selectAll:", "performClose:", "performMiniaturize:"]), "\(actions)")
         precondition(items.first { $0.action == Selector(("redo:")) }?.keyEquivalentModifierMask == [.command, .shift])
+    }
+
+    /// Login que nenhum plugin tratou e toque em aviso antes de os plugins iniciarem.
+    @MainActor static func loginAndTaps() {
+        let urls = [URL(string: "hubmac://callback?code=x")!], hub = URL(fileURLWithPath: "/Applications/Hub.app")
+        precondition(PluginHost.leftover([], hubApp: hub) == .nothing && PluginHost.leftover([], hubApp: nil) == .nothing)
+        precondition(PluginHost.leftover(urls, hubApp: hub) == .forward(hub), "Hub avulso aberto devia receber o login")
+        precondition(PluginHost.leftover(urls, hubApp: nil) == .alert)
+
+        // O toque pode abrir o NeyHub: espera o finishStart, como as URLs, e chega ao plugin uma vez.
+        let root = temp("toque")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let delegate = AppDelegate(model: HubModel(store: PluginStore(root: root)))
+        let f = FakePlugin()
+        let m = try! JSONDecoder().decode(PluginManifest.self, from: Data(
+            #"{"id":"local.falso.t","name":"Falso","version":"1.0.0","contract":1,"hasScreen":false,"permissions":[],"binary":"x.dylib"}"#.utf8))
+        delegate.notifications.receive("local.falso.t.1", "abrir")
+        delegate.model.loaded = [LoadedPlugin(manifest: m, plugin: f, folder: root)]
+        precondition(f.notified.isEmpty, "toque entregue antes de iniciar")
+        delegate.finishStart()
+        precondition(f.notified == ["local.falso.t.1"], "toque na fila se perdeu: \(f.notified)")
+        delegate.notifications.receive("local.falso.t.2", "abrir")
+        delegate.finishStart()
+        precondition(f.notified == ["local.falso.t.1", "local.falso.t.2"], "\(f.notified)")
     }
 
     /// Pasta temporária `$TMPDIR/nh-<nome>` limpa; o selftest.sh apaga nh-* no fim.
@@ -686,10 +725,11 @@ extension Result {
 
 /// Plugin falso do `lifecycle`: mora no NeyHub, conta start/stop.
 final class FakePlugin: NSObject, NeyPlugin {
-    var starts = 0, stops = 0
+    var starts = 0, stops = 0, notified: [String] = []
     var contractVersion: Int { 1 }
     func start(host: NeyHost) { starts += 1 }
     func stop() { stops += 1 }
+    func handleNotification(identifier: String, actionIdentifier: String) { notified.append(identifier) }
     func setMenuBarVisible(_ visible: Bool) {}
     func makeScreen() -> NSViewController? { nil }
     func makeSettings() -> NSViewController { NSViewController() }
