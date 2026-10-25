@@ -1,0 +1,4 @@
+[
+  {"id": "local.aero", "name": "Aero", "repo": "yagoramires/aero", "summary": "Encaixe de janelas estilo Windows", "hasScreen": false},
+  {"id": "local.dose", "name": "Dose", "repo": "yagoramires/dose", "summary": "Remédios e suplementos do dia", "hasScreen": true}
+]

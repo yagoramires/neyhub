@@ -12,9 +12,15 @@ public enum PluginSignature {
     /// App com bundle id `id` assinado pelo certificado fixo; confere também o código aninhado, em modo estrito.
     public static func isTrustedApp(_ app: URL, id: String) -> Bool {
         // id entra no texto do requisito: só caracteres de bundle id, para não injetar cláusulas.
-        guard !id.isEmpty, id.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "." || $0 == "-") }) else { return false }
+        guard isSafeID(id) else { return false }
         return check(app, #"identifier "\#(id)" and \#(trustedLeaf)"#,
                      flags: kSecCSCheckAllArchitectures | kSecCSCheckNestedCode | kSecCSStrictValidate)
+    }
+
+    /// Caracteres de bundle id ([A-Za-z0-9.-]), sem começar por ".": o id vira requisito de assinatura,
+    /// nome de pasta, marcador em `Remove/` e domínio de defaults.
+    public static func isSafeID(_ id: String) -> Bool {
+        !id.isEmpty && !id.hasPrefix(".") && id.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "." || $0 == "-") }
     }
 
     private static func check(_ url: URL, _ requirement: String, flags: UInt32 = kSecCSCheckAllArchitectures) -> Bool {

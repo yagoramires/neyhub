@@ -1,4 +1,5 @@
 import AppKit
+import NeyKit
 import SwiftUI
 
 enum MainWindow {
@@ -12,7 +13,7 @@ enum MainWindow {
         window.minSize = NSSize(width: 760, height: 480)
         window.isReleasedWhenClosed = false
         window.appearance = NSAppearance(named: .darkAqua)
-        window.backgroundColor = NSColor(red: 0x12 / 255, green: 0x13 / 255, blue: 0x15 / 255, alpha: 1)
+        window.backgroundColor = NSColor(Grafite.bg)
         window.contentView = NSHostingView(rootView: RootView(model: model))
         window.center()
         window.setFrameAutosaveName("NeyHubMain")

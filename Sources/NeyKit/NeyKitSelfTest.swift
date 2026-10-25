@@ -17,8 +17,8 @@ public enum NeyKitSelfTest {
     }
 
     static func manifest() {
-        func decode(binary: String, id: String = "local.hello") -> PluginManifest {
-            let json = #"{"id":"\#(id)","name":"Hello","version":"1.0.0","contract":1,"hasScreen":true,"permissions":["acessibilidade"],"binary":"\#(binary)"}"#
+        func decode(binary: String, id: String = "local.hello", name: String = "Hello") -> PluginManifest {
+            let json = #"{"id":"\#(id)","name":"\#(name)","version":"1.0.0","contract":1,"hasScreen":true,"permissions":["acessibilidade"],"binary":"\#(binary)"}"#
             return try! JSONDecoder().decode(PluginManifest.self, from: Data(json.utf8))
         }
         let m = decode(binary: "libHello.dylib")
@@ -28,6 +28,14 @@ public enum NeyKitSelfTest {
         precondition(!decode(binary: "a/b").isValid)
         precondition(!decode(binary: "").isValid)
         precondition(!decode(binary: "x", id: "").isValid)
+        // id vira nome de pasta, marcador em Remove/ e domínio de defaults: só [A-Za-z0-9.-], sem começar por ".".
+        for bad in ["a/b", "..", ".x", "a b", "local_x", #"x\" or anchor apple"#, "lócal"] {
+            precondition(!decode(binary: "x", id: bad).isValid, "id \(bad) aceito")
+            precondition(!PluginSignature.isSafeID(bad))
+        }
+        precondition(decode(binary: "x", id: "local.my-app2").isValid && PluginSignature.isSafeID("local.my-app2"))
+        // name vira <Nome>.neyplugin: nome simples, sem sair da pasta.
+        precondition(!decode(binary: "x", name: "../x").isValid && !decode(binary: "x", name: "a/b").isValid && !decode(binary: "x", name: "").isValid)
         precondition(neyPluginContractVersion == 1)
     }
 

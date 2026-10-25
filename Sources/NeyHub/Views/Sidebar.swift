@@ -8,6 +8,17 @@ final class HubModel: ObservableObject {
     @Published var route: Route = .store
     @Published var loaded: [LoadedPlugin] = []
     @Published var problems: [String: String] = [:]
+
+    // Loja (StoreView.swift)
+    let store: PluginStore
+    @Published var catalog: [CatalogEntry] = []
+    @Published var installed: [String: PluginManifest] = [:] // id → manifest em Plugins/
+    @Published var latest: [String: Release] = [:]           // id → última release no GitHub
+    @Published var staged: [String: String] = [:]            // id → versão pronta para o próximo início
+    @Published var busy: Set<String> = []
+    @Published var detail: String?                           // id aberto no detalhe da Loja
+
+    init(store: PluginStore = PluginStore(root: PluginStore.defaultRoot)) { self.store = store }
 }
 
 struct Sidebar: View {
@@ -20,15 +31,12 @@ struct Sidebar: View {
             (Text("ney").foregroundStyle(Grafite.strong) + Text("hub").foregroundStyle(Grafite.accent))
                 .font(.system(size: 13, weight: .heavy)).tracking(0.5)
                 .padding(.horizontal, 6).padding(.bottom, 10)
-            item(.store, title: "Loja") { Text("◎").font(.system(size: 12)) }
-            item(.permissions, title: "Permissões") { Text("⚙").font(.system(size: 12)) }
+            item(.store, title: "Loja") { symbol("bag") }
+            item(.permissions, title: "Permissões") { symbol("lock.shield") }
             GSectionLabel("Instalados").padding(.horizontal, 6).padding(.top, 10).padding(.bottom, 4)
             ForEach(model.loaded, id: \.manifest.id) { plugin in
                 item(.app(plugin.manifest.id), title: plugin.manifest.name) {
-                    Text(String(plugin.manifest.name.prefix(1)).uppercased())
-                        .font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
-                        .frame(width: 18, height: 18)
-                        .background(Self.color(for: plugin.manifest.id), in: RoundedRectangle(cornerRadius: 5))
+                    AppIcon(name: plugin.manifest.name, id: plugin.manifest.id, size: 18)
                 }
             }
             Spacer(minLength: 0)
@@ -58,7 +66,7 @@ struct Sidebar: View {
             }
             .foregroundStyle(selected ? Grafite.strong : Grafite.ghostText)
             .padding(.horizontal, 6).padding(.vertical, 5)
-            .background(selected ? Color(red: 0x22 / 255, green: 0x24 / 255, blue: 0x2a / 255) : .clear, in: RoundedRectangle(cornerRadius: 7))
+            .background(selected ? Grafite.selected : .clear, in: RoundedRectangle(cornerRadius: 7))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -66,8 +74,12 @@ struct Sidebar: View {
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
     }
 
-    /// Cor estável por id (hash simples; String.hashValue muda a cada execução).
-    private static func color(for id: String) -> Color {
+    private func symbol(_ name: String) -> some View {
+        Image(systemName: name).font(.system(size: 12, weight: .medium)).accessibilityHidden(true)
+    }
+
+    /// Cor estável por id (hash simples; String.hashValue muda a cada execução). A Loja usa a mesma.
+    static func color(for id: String) -> Color {
         let palette = ["#3d7bff", "#ff5a4f", "#25c26e", "#a46bff", "#f0a020", "#e04fa0"]
         let sum = id.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
         return Grafite.color(hex: palette[sum % palette.count]) ?? Grafite.accent
@@ -79,13 +91,13 @@ struct RootView: View {
     var body: some View {
         HStack(spacing: 0) {
             Sidebar(model: model)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 16, weight: .semibold)).foregroundStyle(Grafite.strong)
-                Text(subtitle).font(.system(size: 11)).foregroundStyle(Grafite.muted)
-                Spacer(minLength: 0)
+            if model.route == .store {
+                StoreView(model: model)
+                    .padding(.horizontal, 16).padding(.top, 38)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else {
+                placeholder
             }
-            .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 38)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .foregroundStyle(Grafite.text)
         .background(Grafite.bg)
@@ -93,18 +105,26 @@ struct RootView: View {
         .environment(\.colorScheme, .dark)
     }
 
+    private var placeholder: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(.system(size: 16, weight: .semibold)).foregroundStyle(Grafite.strong)
+            Text(subtitle).font(.system(size: 11)).foregroundStyle(Grafite.muted)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 38)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
     private var title: String {
         switch model.route {
-        case .store: "Loja"
-        case .permissions: "Permissões"
+        case .store, .permissions: "Permissões"
         case .app(let id): model.loaded.first { $0.manifest.id == id }?.manifest.name ?? id
         }
     }
 
     private var subtitle: String {
         switch model.route {
-        case .store: "Os apps do NeyHub aparecem aqui."
-        case .permissions: "O que cada plugin pode acessar."
+        case .store, .permissions: "O que cada plugin pode acessar."
         case .app: "Em breve."
         }
     }

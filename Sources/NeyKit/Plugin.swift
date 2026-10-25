@@ -28,9 +28,8 @@ public struct PluginManifest: Codable, Equatable {
     public let permissions: [String]       // Task 10 troca por [Permission]
     public let binary: String              // só nome de arquivo: sem "/" e sem ".."
 
-    /// `binary` é nome simples (não sai da pasta) e id/nome não vazios.
-    public var isValid: Bool {
-        !id.isEmpty && !name.isEmpty && !binary.isEmpty && binary != "."
-            && !binary.contains("/") && !binary.contains("..")
-    }
+    /// id seguro (`PluginSignature.isSafeID`); `name` (vira `<Nome>.neyplugin`) e `binary` são nomes simples, não saem da pasta.
+    public var isValid: Bool { PluginSignature.isSafeID(id) && Self.isPlainName(name) && Self.isPlainName(binary) }
+
+    private static func isPlainName(_ s: String) -> Bool { !s.isEmpty && s != "." && !s.contains("/") && !s.contains("..") }
 }

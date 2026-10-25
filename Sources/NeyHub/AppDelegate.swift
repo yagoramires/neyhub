@@ -7,6 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         offerLoginItem()
+        model.store.applyPending() // antes de qualquer plugin ser carregado
+        model.openStore()          // catálogo do cache/embutido já; rede em segundo plano
         showWindow()
     }
 

@@ -5,6 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 scripts/build.sh debug
+cmp -s catalog.json Resources/catalog.json || { echo "✗ catalog.json e Resources/catalog.json diferentes" >&2; exit 1; }
 
 ERR=$(mktemp)
 cleanup() {

@@ -17,6 +17,7 @@ public enum Grafite {
     public static let awakeBorder = hex("#3c5214")
     public static let ghostBorder = hex("#33363c")
     public static let ghostText = hex("#9a9ca3")
+    public static let selected = hex("#22242a")
     public static let cardRadius: CGFloat = 10
     public static let windowRadius: CGFloat = 14
 
@@ -96,6 +97,7 @@ public struct GSectionLabel: View {
             .font(.system(size: 9, weight: .semibold))
             .tracking(1)
             .foregroundStyle(Grafite.label)
+            .accessibilityAddTraits(.isHeader)
     }
 }
 
