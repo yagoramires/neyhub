@@ -1,0 +1,122 @@
+<style>
+  .nh{font-family:-apple-system,"SF Pro Display",Inter,sans-serif;border-radius:14px;overflow:hidden;height:340px;display:flex;font-size:11px;position:relative}
+  .nh *{box-sizing:border-box}
+  .ico{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;flex:none}
+  .row{display:flex;align-items:center;gap:8px}
+  .sw{width:26px;height:15px;border-radius:9px;position:relative;flex:none}
+  .sw::after{content:"";position:absolute;top:2px;width:11px;height:11px;border-radius:50%;background:#fff}
+  .sw.on::after{right:2px}.sw.off::after{left:2px}
+  /* A — Grafite */
+  .a{background:#121315;color:#d8d9dc}
+  .a .side{width:128px;background:#17181b;border-right:1px solid #24262a;padding:12px 8px;display:flex;flex-direction:column;gap:3px}
+  .a .brand{font-weight:800;letter-spacing:.5px;color:#fff;padding:0 6px 10px;font-size:13px}
+  .a .brand b{color:#c6ff3d}
+  .a .it{padding:5px 6px;border-radius:7px;color:#9a9ca3}
+  .a .it.sel{background:#22242a;color:#fff}
+  .a .it .ico{width:18px;height:18px;border-radius:5px;font-size:9px}
+  .a .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#5d6068;padding:10px 6px 4px}
+  .a .main{flex:1;padding:16px}
+  .a h4{margin:0 0 2px;font-size:16px;color:#fff}
+  .a .muted{color:#6e7179}
+  .a .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .a .card{background:#1a1b1f;border:1px solid #25272c;border-radius:10px;padding:10px}
+  .a .pill{margin-left:auto;font-size:9px;padding:3px 8px;border-radius:20px;background:#c6ff3d;color:#111;font-weight:700}
+  .a .pill.ghost{background:transparent;border:1px solid #33363c;color:#9a9ca3}
+  .a .awake{margin-top:auto;background:#1c2410;border:1px solid #3c5214;border-radius:9px;padding:7px;color:#c6ff3d}
+  /* B — Vitrine */
+  .b{background:linear-gradient(160deg,#1a0f2e,#0c1424 60%,#062022);color:#fff;flex-direction:column;padding:14px}
+  .b .top{display:flex;align-items:center;gap:10px}
+  .b .brand{font-weight:900;font-size:15px;letter-spacing:-.3px}
+  .b .tabs{display:flex;gap:4px;margin-left:12px}
+  .b .tab{padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.07);color:#cbd}
+  .b .tab.sel{background:#fff;color:#111;font-weight:700}
+  .b .awake{margin-left:auto;padding:4px 10px;border-radius:20px;background:rgba(255,190,60,.15);color:#ffc95c;border:1px solid rgba(255,190,60,.4)}
+  .b .hero{margin-top:12px;border-radius:14px;padding:14px;background:linear-gradient(120deg,#6d3cff,#ff4f9a);height:96px;position:relative}
+  .b .hero h4{margin:0;font-size:18px}
+  .b .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+  .b .tile{border-radius:12px;padding:9px;height:88px;display:flex;flex-direction:column;justify-content:space-between}
+  /* C — Dock */
+  .c{background:#f3f1ec;color:#1b1b1b;flex-direction:column}
+  .c .stage{flex:1;margin:12px 12px 0;background:#fff;border-radius:12px;border:1px solid #e4e1d9;padding:14px;position:relative}
+  .c h4{margin:0;font-size:16px}
+  .c .dock{display:flex;gap:8px;align-items:center;justify-content:center;padding:10px}
+  .c .dockin{display:flex;gap:7px;background:#1b1b1b;padding:7px 9px;border-radius:16px;align-items:center}
+  .c .dockin .ico{width:24px;height:24px}
+  .c .dockin .sel{outline:2px solid #ff6a3d;outline-offset:2px}
+  .c .sep{width:1px;height:20px;background:#444}
+  .c .plus{width:24px;height:24px;border-radius:8px;border:1px dashed #777;color:#aaa;display:flex;align-items:center;justify-content:center}
+  .c .moon{padding:4px 8px;border-radius:10px;background:#ff6a3d;color:#fff;font-weight:700;font-size:10px}
+  .c .zone{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+  .c .z{height:46px;border-radius:7px;background:#f3f1ec;border:1px solid #e4e1d9}
+  .c .z.hi{background:#ffe6dc;border-color:#ff6a3d}
+</style>
+
+<h2>Qual direção visual tem mais a cara do NeyHub?</h2>
+<p class="subtitle">Mesma tela nas três: a loja com seus apps + o switch "acordado". Clique na que mais te puxa (pode comentar no terminal o que pegaria de cada uma).</p>
+
+<div class="cards">
+  <div class="card" data-choice="grafite" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="nh a">
+        <div class="side">
+          <div class="brand">ney<b>hub</b></div>
+          <div class="it row">◎ Loja</div>
+          <div class="it row">⚙ Permissões</div>
+          <div class="lbl">Instalados</div>
+          <div class="it row sel"><span class="ico" style="background:#3d7bff">A</span>Aero</div>
+          <div class="it row"><span class="ico" style="background:#ff5a4f">C</span>Capture</div>
+          <div class="it row"><span class="ico" style="background:#25c26e">N</span>NeyZap</div>
+          <div class="it row"><span class="ico" style="background:#a46bff">P</span>Pauta</div>
+          <div class="awake row">☾ Acordado <span class="sw on" style="background:#c6ff3d;margin-left:auto"></span></div>
+        </div>
+        <div class="main">
+          <h4>Loja</h4><div class="muted">7 apps · 4 instalados · 1 atualização</div>
+          <div class="grid">
+            <div class="card"><div class="row"><span class="ico" style="background:#3d7bff">A</span><div><b style="color:#fff">Aero</b><div class="muted">v0.4.1</div></div><span class="pill ghost">Abrir</span></div><div class="row" style="margin-top:8px">Barra de menus <span class="sw on" style="background:#c6ff3d;margin-left:auto"></span></div></div>
+            <div class="card"><div class="row"><span class="ico" style="background:#ff5a4f">C</span><div><b style="color:#fff">Capture</b><div class="muted">0.2.0 → 0.3.0</div></div><span class="pill">Atualizar</span></div><div class="row" style="margin-top:8px">Barra de menus <span class="sw off" style="background:#33363c;margin-left:auto"></span></div></div>
+            <div class="card"><div class="row"><span class="ico" style="background:#f0a020">H</span><div><b style="color:#fff">Hub</b><div class="muted">Casa / IoT</div></div><span class="pill">Instalar</span></div></div>
+            <div class="card"><div class="row"><span class="ico" style="background:#e04fa0">D</span><div><b style="color:#fff">Dose</b><div class="muted">Remédios</div></div><span class="pill">Instalar</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body"><h3>A · Grafite</h3><p>Escuro, denso, um acento neon. Sidebar com seus apps, cara de ferramenta pro (Raycast/Linear). Parente do Pauta.</p></div>
+  </div>
+
+  <div class="card" data-choice="vitrine" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="nh b">
+        <div class="top"><span class="brand">NeyHub</span>
+          <div class="tabs"><span class="tab sel">Meus apps</span><span class="tab">Loja</span><span class="tab">Permissões</span></div>
+          <span class="awake">☾ Acordado · ligado</span></div>
+        <div class="hero"><div style="opacity:.8">Novidade</div><h4>Capture 0.3.0</h4><div style="opacity:.85;margin-top:4px">Gravação com áudio do sistema + 3 correções</div>
+          <span style="position:absolute;right:14px;bottom:14px;background:#fff;color:#111;padding:5px 12px;border-radius:20px;font-weight:700">Atualizar</span></div>
+        <div class="tiles">
+          <div class="tile" style="background:linear-gradient(150deg,#3d7bff,#1b3fa8)"><b>Aero</b><span class="sw on" style="background:rgba(255,255,255,.35)"></span></div>
+          <div class="tile" style="background:linear-gradient(150deg,#ff6a4f,#b02a3a)"><b>Capture</b><span class="sw off" style="background:rgba(0,0,0,.3)"></span></div>
+          <div class="tile" style="background:linear-gradient(150deg,#2fd27c,#0e7a4a)"><b>NeyZap</b><span class="sw on" style="background:rgba(255,255,255,.35)"></span></div>
+          <div class="tile" style="background:linear-gradient(150deg,#b07bff,#5a2fb0)"><b>Pauta</b><span class="sw on" style="background:rgba(255,255,255,.35)"></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body"><h3>B · Vitrine</h3><p>Colorido, cada app com sua cor forte, destaque de novidade/patch note no topo. Cara de launcher de games.</p></div>
+  </div>
+
+  <div class="card" data-choice="dock" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="nh c">
+        <div class="stage">
+          <div class="row"><span class="ico" style="background:#3d7bff">A</span><div><h4>Aero</h4><div style="color:#8a877f">tela do app, aqui dentro</div></div>
+            <span style="margin-left:auto;color:#8a877f">Barra de menus</span><span class="sw on" style="background:#ff6a3d"></span></div>
+          <div class="zone"><div class="z hi"></div><div class="z"></div><div class="z"></div><div class="z"></div><div class="z hi"></div><div class="z"></div></div>
+          <div style="margin-top:10px;color:#8a877f">Layouts de encaixe · atalhos · monitores</div>
+        </div>
+        <div class="dock"><div class="dockin">
+          <span class="ico sel" style="background:#3d7bff">A</span><span class="ico" style="background:#ff5a4f">C</span><span class="ico" style="background:#25c26e">N</span><span class="ico" style="background:#a46bff">P</span>
+          <span class="sep"></span><span class="plus">+</span><span class="sep"></span><span class="moon">☾ Acordado</span>
+        </div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>C · Dock flutuante</h3><p>Claro e quente. O app aberto ocupa tudo; seus apps num dock embaixo, "+" abre a loja. Foco total no app em uso.</p></div>
+  </div>
+</div>
