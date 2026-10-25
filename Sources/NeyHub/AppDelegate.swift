@@ -4,14 +4,19 @@ import ServiceManagement
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let model = HubModel()
     private let host = HostBridge()
+    private lazy var notifications = Notifications(model: model)
     private var window: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        notifications.install()
+        host.onOpenPermissions = { [self] in model.route = .permissions; showWindow() }
         offerLoginItem()
         model.store.applyPending() // antes de qualquer plugin ser carregado
         model.openStore()          // catálogo do cache/embutido já; rede em segundo plano
         showWindow()
         PluginHost.startAll(model, store: model.store, host: host)
+        notifications.registerCategories()
+        Task { await model.refreshPermissions() } // ponto da sidebar já no início
     }
 
     func applicationWillTerminate(_ notification: Notification) {

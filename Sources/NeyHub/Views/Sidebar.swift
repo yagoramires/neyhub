@@ -9,6 +9,7 @@ final class HubModel: ObservableObject {
     @Published var route: Route = .store
     @Published var loaded: [LoadedPlugin] = []
     @Published var problems: [String: String] = [:]
+    @Published var granted: [Permission: Bool] = [:]    // última consulta ao sistema (PermissionsView.swift)
     @Published var presences: [String: Presence] = [:]   // id → presença aplicada (PluginHost.apply)
     /// Tela de cada plugin, criada uma vez: trocar de item na sidebar não recria.
     var screens: [String: NSViewController] = [:]
@@ -46,7 +47,7 @@ struct Sidebar: View {
                 .font(.system(size: 13, weight: .heavy)).tracking(0.5)
                 .padding(.horizontal, 6).padding(.bottom, 10)
             item(.store, title: "Loja") { symbol("bag") }
-            item(.permissions, title: "Permissões") { symbol("lock.shield") }
+            item(.permissions, title: "Permissões", dot: model.missingPermission) { symbol("lock.shield") }
             GSectionLabel("Instalados").padding(.horizontal, 6).padding(.top, 10).padding(.bottom, 4)
             ForEach(model.sidebarApps, id: \.manifest.id) { plugin in
                 item(.app(plugin.manifest.id), title: plugin.manifest.name) {
@@ -70,13 +71,14 @@ struct Sidebar: View {
         .overlay(alignment: .trailing) { Rectangle().fill(Grafite.border).frame(width: 1) }
     }
 
-    private func item<Icon: View>(_ route: Route, title: String, @ViewBuilder icon: () -> Icon) -> some View {
+    private func item<Icon: View>(_ route: Route, title: String, dot: Bool = false, @ViewBuilder icon: () -> Icon) -> some View {
         let selected = model.route == route
         return Button { model.route = route } label: {
             HStack(spacing: 7) {
                 icon().frame(width: 18, height: 18)
                 Text(title).font(.system(size: 12))
                 Spacer(minLength: 0)
+                if dot { Circle().fill(Grafite.accent).frame(width: 6, height: 6).accessibilityLabel("Falta permissão") }
             }
             .foregroundStyle(selected ? Grafite.strong : Grafite.ghostText)
             .padding(.horizontal, 6).padding(.vertical, 5)
@@ -106,7 +108,7 @@ struct RootView: View {
         HStack(spacing: 0) {
             Sidebar(model: model)
             switch model.route {
-            case .permissions: placeholder
+            case .permissions: PermissionsView(model: model)
             case .app(let id):
                 if let p = model.loaded.first(where: { $0.manifest.id == id }) { AppScreen(model: model, plugin: p).id(id) } else { store }
             case .store: store
@@ -122,16 +124,5 @@ struct RootView: View {
         StoreView(model: model)
             .padding(.horizontal, 16).padding(.top, 38)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    // Task 10 troca pela tela de Permissões.
-    private var placeholder: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("Permissões").font(.system(size: 16, weight: .semibold)).foregroundStyle(Grafite.strong)
-            Text("O que cada plugin pode acessar.").font(.system(size: 11)).foregroundStyle(Grafite.muted)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 38)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }

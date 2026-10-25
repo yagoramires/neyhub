@@ -65,6 +65,18 @@ enum Snapshots {
         }
         saveHosted(detail.foregroundStyle(Grafite.text).background(Grafite.bg).environment(\.colorScheme, .dark),
                    as: "store-detail.png", in: folder)
+
+        // Permissões: Aero e Dose pedem; acessibilidade concedida, o resto não.
+        let perms = HubModel(store: PluginStore(root: FileManager.default.temporaryDirectory.appendingPathComponent("nh-snapshots")))
+        func manifest(_ id: String, _ name: String, _ list: String) -> PluginManifest {
+            try! JSONDecoder().decode(PluginManifest.self, from: Data(
+                #"{"id":"\#(id)","name":"\#(name)","version":"1.0.0","contract":1,"hasScreen":false,"permissions":\#(list),"binary":"l.dylib"}"#.utf8))
+        }
+        perms.installed["local.aero"] = manifest("local.aero", "Aero", #"["accessibility","screenRecording"]"#)
+        perms.installed["local.dose"] = manifest("local.dose", "Dose", #"["notifications"]"#)
+        perms.granted = [.accessibility: true, .screenRecording: false, .notifications: false]
+        perms.route = .permissions
+        saveHosted(RootView(model: perms), as: "permissions.png", in: folder)
         print("ok \(folder.path)")
     }
 

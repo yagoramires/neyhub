@@ -1,6 +1,7 @@
 import AppKit
 import NeyKit
 import NeyKitApp
+import UserNotifications
 
 /// `NeyHub --selftest [--fixture <pasta>]` roda tudo e imprime "selftest ok". Precisa rodar de dentro do .app.
 enum SelfTest {
@@ -11,7 +12,48 @@ enum SelfTest {
         signature()
         catalog()
         store()
+        notifications()
         if let fixture { plugins(fixture); storeInstall(fixture) } else { FileHandle.standardError.write(Data("sem --fixture: pulando carga de plugins\n".utf8)) }
+    }
+
+    @MainActor static func notifications() {
+        let ids = ["local.dose", "local.aero", "local.dosex"]
+        precondition(Notifications.owner(of: "local.dose.lembrete.42", among: ids) == "local.dose")
+        precondition(Notifications.owner(of: "local.dosex.1", among: ids) == "local.dosex")
+        precondition(Notifications.owner(of: "local.dose", among: ids) == nil)       // sem "." + resto
+        precondition(Notifications.owner(of: "local.doser.1", among: ids) == nil)    // prefixo sem ponto não casa
+        precondition(Notifications.owner(of: "x.local.dose.1", among: ids) == nil)
+        precondition(Notifications.owner(of: "local.dose.a", among: ["local", "local.dose"]) == "local.dose") // o mais longo vence
+
+        let a = UNNotificationCategory(identifier: "lembrete", actions: [], intentIdentifiers: [])
+        let b = UNNotificationCategory(identifier: "lembrete", actions: [], intentIdentifiers: [], options: [.customDismissAction])
+        let c = UNNotificationCategory(identifier: "outra", actions: [], intentIdentifiers: [])
+        let merged = Notifications.merge([("local.dose", [a]), ("local.aero", [b, c])])
+        precondition(merged.map(\.identifier).sorted() == ["lembrete", "outra"])
+        precondition(merged.first { $0.identifier == "lembrete" }?.options == [])    // colisão: o primeiro plugin ganha
+
+        let model = HubModel(store: PluginStore(root: temp("perm")))
+        func manifest(_ id: String, _ perms: String) -> PluginManifest {
+            try! JSONDecoder().decode(PluginManifest.self, from: Data(
+                #"{"id":"\#(id)","name":"\#(id)","version":"1.0.0","contract":1,"hasScreen":false,"permissions":\#(perms),"binary":"l.dylib"}"#.utf8))
+        }
+        model.installed["a"] = manifest("a", #"["notifications","accessibility"]"#)
+        model.installed["b"] = manifest("b", #"["accessibility"]"#)
+        let users = model.permissionUsers
+        precondition(users.map(\.permission) == [.accessibility, .notifications] && users[0].apps == ["a", "b"] && users[1].apps == ["a"])
+        precondition(!model.missingPermission)                                       // ainda não consultado
+        model.granted = [.accessibility: true, .notifications: true]
+        precondition(!model.missingPermission)
+        model.granted[.notifications] = false
+        precondition(model.missingPermission)
+        model.granted[.notifications] = nil; model.installed["a"] = nil; model.granted[.screenRecording] = false
+        precondition(!model.missingPermission)                                       // negada, mas ninguém usa
+
+        let bridge = HostBridge()
+        var opened = 0
+        bridge.onOpenPermissions = { opened += 1 }
+        bridge.openPermissions()
+        precondition(opened == 1)
     }
 
     static func signature() {

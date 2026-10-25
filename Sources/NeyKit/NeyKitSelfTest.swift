@@ -13,16 +13,24 @@ public enum NeyKitSelfTest {
         precondition(abs(rgb.redComponent - 0xc6 / 255) < 0.002 && abs(rgb.greenComponent - 1) < 0.002
                      && abs(rgb.blueComponent - 0x3d / 255) < 0.002)
         manifest()
+        permissions()
         releaseDefaultsPresence()
+    }
+
+    static func permissions() {
+        precondition(Permission(rawValue: "screenRecording")?.title == "Gravação de Tela")
+        precondition(Permission.allCases.map(\.title) == ["Acessibilidade", "Gravação de Tela", "Notificações"])
+        precondition(Permission.allCases.allSatisfy { $0.settingsURL.scheme == "x-apple.systempreferences" })
+        precondition(Permission.screenRecording.settingsURL.absoluteString.hasSuffix("Privacy_ScreenCapture"))
     }
 
     static func manifest() {
         func decode(binary: String, id: String = "local.hello", name: String = "Hello") -> PluginManifest {
-            let json = #"{"id":"\#(id)","name":"\#(name)","version":"1.0.0","contract":1,"hasScreen":true,"permissions":["acessibilidade"],"binary":"\#(binary)"}"#
+            let json = #"{"id":"\#(id)","name":"\#(name)","version":"1.0.0","contract":1,"hasScreen":true,"permissions":["accessibility","futura","notifications"],"binary":"\#(binary)"}"#
             return try! JSONDecoder().decode(PluginManifest.self, from: Data(json.utf8))
         }
         let m = decode(binary: "libHello.dylib")
-        precondition(m.id == "local.hello" && m.contract == 1 && m.hasScreen && m.permissions == ["acessibilidade"])
+        precondition(m.id == "local.hello" && m.contract == 1 && m.hasScreen && m.permissions == [.accessibility, .notifications]) // "futura" (desconhecida) é descartada, não derruba o manifest
         precondition(m.isValid)
         precondition(!decode(binary: "../x").isValid)
         precondition(!decode(binary: "a/b").isValid)

@@ -25,8 +25,23 @@ public let neyPluginContractVersion = 1
 /// `<Nome>.neyplugin/manifest.json`.
 public struct PluginManifest: Codable, Equatable {
     public let id: String, name: String, version: String, contract: Int, hasScreen: Bool
-    public let permissions: [String]       // Task 10 troca por [Permission]
+    public let permissions: [Permission]
     public let binary: String              // só nome de arquivo: sem "/" e sem ".."
+
+    private enum CodingKeys: String, CodingKey { case id, name, version, contract, hasScreen, permissions, binary }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id); name = try c.decode(String.self, forKey: .name)
+        version = try c.decode(String.self, forKey: .version); contract = try c.decode(Int.self, forKey: .contract)
+        hasScreen = try c.decode(Bool.self, forKey: .hasScreen); binary = try c.decode(String.self, forKey: .binary)
+        // Permissão de um NeyHub mais novo não pode impedir o carregamento: descarta e avisa no log.
+        let raw = try c.decode([String].self, forKey: .permissions)
+        let known = raw.compactMap(Permission.init(rawValue:))
+        let unknown = raw.filter { Permission(rawValue: $0) == nil }
+        if !unknown.isEmpty { NSLog("NeyHub: permissões desconhecidas em \(try c.decode(String.self, forKey: .id)): \(unknown)") }
+        permissions = known
+    }
 
     /// id seguro (`PluginSignature.isSafeID`); `name` (vira `<Nome>.neyplugin`) e `binary` são nomes simples, não saem da pasta.
     public var isValid: Bool { PluginSignature.isSafeID(id) && Self.isPlainName(name) && Self.isPlainName(binary) }
