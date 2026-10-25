@@ -68,7 +68,7 @@ enum PluginHost {
         case .contractTooNew: "Precisa atualizar o NeyHub"
         case .contractTooOld: "Precisa atualizar o app"
         case .alreadyLoaded: "Reinicie o NeyHub para reinstalar"
-        case .needsMacOS(let v): "Precisa do macOS \(v.hasSuffix(".0") ? String(v.dropLast(2)) : v)"
+        case .needsMacOS(let v): "Precisa do macOS \(v)" // como está no manifest ("15.0")
         default: "Não deu pra carregar"
         }
     }

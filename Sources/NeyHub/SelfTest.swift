@@ -52,7 +52,7 @@ enum SelfTest {
         precondition(menu.items.last?.keyEquivalent == "q")
     }
 
-    /// `minMacOS` do manifest (o Hub pede 15): num macOS antigo o card diz "Precisa do macOS 15", sem chegar ao dlopen.
+    /// `minMacOS` do manifest (o Hub pede 15.0): num macOS antigo o card diz "Precisa do macOS 15.0", sem chegar ao dlopen.
     @MainActor static func minMacOS() {
         func manifest(_ extra: String) -> PluginManifest? {
             try? JSONDecoder().decode(PluginManifest.self, from: Data(
@@ -79,7 +79,7 @@ enum SelfTest {
         precondition(PluginHost.load(folder: folder).failure == .needsMacOS("15.0") && PluginHost.dlopenCount == dl, "macOS antigo chegou ao dlopen")
         let model = HubModel(store: PluginStore(root: temp("minos-model")))
         PluginHost.start(folder: folder, model: model)
-        precondition(model.problems["local.hub"] == "Precisa do macOS 15" && model.loaded.isEmpty)
+        precondition(model.problems["local.hub"] == "Precisa do macOS 15.0" && model.loaded.isEmpty)
         precondition(PluginHost.problemText(.needsMacOS("15.4")) == "Precisa do macOS 15.4")
         // No macOS certo o mesmo manifest segue adiante (e para na assinatura: a pasta não tem dylib).
         PluginHost.currentOS = os(15)
