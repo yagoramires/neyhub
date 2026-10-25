@@ -40,6 +40,8 @@ if let other = NSRunningApplication.runningApplications(withBundleIdentifier: "l
     $0.processIdentifier != me.processIdentifier && !$0.isTerminated
         && ($0.launchDate ?? .distantPast) <= (me.launchDate ?? .distantFuture)
 }) {
+    // activate() não reabre a janela fechada: pede ao outro, pelo nome, que mostre a dele.
+    DistributedNotificationCenter.default().postNotificationName(.init("local.neyhub.show"), object: nil, deliverImmediately: true)
     other.activate()
     exit(0)
 }

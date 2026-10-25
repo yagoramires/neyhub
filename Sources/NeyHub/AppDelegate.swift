@@ -14,6 +14,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = Self.mainMenu()
+        DistributedNotificationCenter.default().addObserver(forName: .init("local.neyhub.show"), object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.showWindow() }
+        }
         notifications.install()
         model.registerCategories = { [notifications] in notifications.registerCategories() }
         model.host.onOpenPermissions = { [self] in model.route = .permissions; showWindow() }
