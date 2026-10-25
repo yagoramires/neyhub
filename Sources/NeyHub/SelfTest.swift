@@ -173,7 +173,11 @@ enum SelfTest {
         host.onShowScreen = { asked.append($0); model.showScreen($0) }
         model.route = .permissions
         (host as NeyHost).showScreen?(id: "local.hello")
+        RunLoop.main.run(until: Date().addingTimeInterval(0.05)) // a ponte entrega na fila principal
         precondition(asked == ["local.hello"] && model.route == .app("local.hello"), "showScreen não levou à tela")
+        model.route = .permissions
+        model.showScreen("local.ninguem")
+        precondition(model.route == .permissions && model.detail == nil, "id desconhecido mudou a rota")
         noScreen.route = .permissions
         noScreen.showScreen(m.id)
         precondition(noScreen.route == .store && noScreen.detail == m.id, "sem tela devia abrir o card")

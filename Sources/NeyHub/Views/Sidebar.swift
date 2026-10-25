@@ -31,6 +31,7 @@ final class HubModel: ObservableObject {
 
     /// Pedido do plugin (`NeyHost.showScreen`): a tela dele se o modo tem tela, senão o card na Loja.
     func showScreen(_ id: String) {
+        guard loaded.contains(where: { $0.manifest.id == id }) || installed[id] != nil else { return } // id de ninguém: fica onde está
         if presences[id]?.screen == true { route = .app(id) } else { route = .store; detail = id }
     }
 

@@ -13,7 +13,8 @@ final class HostBridge: NSObject, NeyHost {
     /// O AppDelegate liga: leva à tela do app e traz a janela.
     var onShowScreen: ((String) -> Void)?
 
-    func showScreen(id: String) { onShowScreen?(id) }
+    /// O plugin pode pedir de qualquer fila (ex.: resposta de notificação); a janela e a rota são da principal.
+    func showScreen(id: String) { DispatchQueue.main.async { [weak self] in self?.onShowScreen?(id) } }
 
     func log(_ message: String) {
         messages.append(message)
