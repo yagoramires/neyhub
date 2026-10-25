@@ -26,6 +26,7 @@ public enum HubCheck {
     public static func leaveForHub(id: String, name: String) -> Bool {
         NSApp.activate()
         let alert = NSAlert()
+        alert.window.appearance = NSAppearance(named: .darkAqua) // Grafite
         alert.messageText = "O \(name) já roda no NeyHub"
         alert.informativeText = "Para não rodar duas vezes, esta cópia vai fechar."
         alert.addButton(withTitle: "Abrir NeyHub")

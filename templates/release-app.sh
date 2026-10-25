@@ -27,6 +27,10 @@ IDENTITY="Aero Local Signing"
 # here-string, não pipe: com pipefail, o grep -q saindo cedo pode dar SIGPIPE no security e um falso "sem identidade".
 IDENTS=$(security find-identity -p codesigning)
 grep -q "$IDENTITY" <<<"$IDENTS" || { echo "✗ sem a identidade \"$IDENTITY\"" >&2; exit 1; }
+# Requisito fixo que o NeyHub (plugins) e o Updater (apps) conferem; lido do NeyKit para o hash não ter duas cópias.
+SIG="$NEYHUB_PATH/Sources/NeyKit/PluginSignature.swift"
+LEAF=$(grep -o 'certificate leaf = H"[0-9a-f]\{40\}"' "$SIG" || true)
+[[ -n "$LEAF" ]] || { echo "✗ requisito fixo não encontrado em $SIG" >&2; exit 1; }
 VALIDATOR="$NEYHUB_PATH/build/NeyHub.app/Contents/MacOS/NeyHub"
 if [[ -n "$PLUGIN_PRODUCT" && ! -x "$VALIDATOR" ]]; then
   echo "✗ validador não encontrado: $VALIDATOR (rode scripts/build.sh no neyhub ou defina NEYHUB_PATH)" >&2
@@ -43,6 +47,8 @@ rm -f "dist/$NAME-$V".*
 scripts/build.sh release --dist
 APP="build/$NAME.app"
 ASSETS=("dist/$NAME-$V.zip")
+BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" Resources/Info.plist)
+codesign -v --strict -R "=identifier \"$BUNDLE_ID\" and $LEAF" "$APP" || { echo "✗ $APP não passa no requisito fixo: o Updater recusaria" >&2; exit 1; }
 
 # dmg: .app + atalho para /Applications
 STAGE=$(mktemp -d)
@@ -70,6 +76,7 @@ PY
   cp "$BIN" "$PLG/$BINARY"
   [[ -f Resources/AppIcon.icns ]] && cp Resources/AppIcon.icns "$PLG/icon.icns"
   codesign --force --sign "$IDENTITY" --timestamp=none "$PLG/$BINARY"
+  codesign -v -R "=$LEAF" "$PLG/$BINARY" || { echo "✗ $PLG/$BINARY não passa no requisito fixo: o NeyHub recusaria" >&2; exit 1; }
   ditto -c -k --norsrc --keepParent "$PLG" "dist/$NAME-$V.neyplugin"
   ASSETS+=("dist/$NAME-$V.neyplugin")
 fi
@@ -81,7 +88,7 @@ for a in "${ASSETS[@]}"; do echo "✓ $a"; done
 echo "✓ notas: $NOTES"
 
 if (( PUBLISH )) && [[ "${NEYHUB_CONFIRM_PUBLISH:-}" == yes ]]; then
-  gh release create "v$V" "${ASSETS[@]}" --title "$NAME $V" --notes-file "$NOTES"
+  gh release create "v$V" "${ASSETS[@]}" --verify-tag --title "$NAME $V" --notes-file "$NOTES"
 else
   echo "(só empacotado) publicaria v$V com: ${ASSETS[*]}"
   echo "  para publicar: --publish e NEYHUB_CONFIRM_PUBLISH=yes"

@@ -39,7 +39,7 @@ struct AppDetailView: View {
                     }
                 }
                 Text(entry.summary).font(.system(size: 12))
-                if let problem = model.problems[entry.id] { ProblemText(problem) }
+                if let problem = model.problems[entry.id] { ProblemText(problem, model: model) }
 
                 if model.installed[entry.id] != nil {
                     GSectionLabel("Modo")

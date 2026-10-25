@@ -110,6 +110,21 @@ final class PluginStore {
 
     func needsUpdate(installed: PluginManifest, latest: Release) -> Bool { Release.isNewer(latest.version, than: installed.version) }
 
+    /// Apaga `Plugins/<folder>` que nunca foi carregada (manifest ilegível); move para `Incoming/` antes, como o applyPending.
+    @discardableResult func removeBroken(_ folder: String) -> Bool {
+        guard folder.hasSuffix(".neyplugin"), !folder.contains("/"), !folder.contains("..") else { return false }
+        let trash = dir("Incoming").appendingPathComponent(UUID().uuidString)
+        do {
+            try fm.createDirectory(at: dir("Incoming"), withIntermediateDirectories: true)
+            try fm.moveItem(at: dir("Plugins").appendingPathComponent(folder), to: trash)
+            try? fm.removeItem(at: trash)
+            return true
+        } catch {
+            NSLog("NeyHub: não deu pra remover \(folder): \(error)")
+            return false
+        }
+    }
+
     func markForRemoval(id: String) {
         guard PluginSignature.isSafeID(id) else { return }
         try? fm.createDirectory(at: dir("Remove"), withIntermediateDirectories: true)

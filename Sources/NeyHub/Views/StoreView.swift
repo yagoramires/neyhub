@@ -50,9 +50,11 @@ extension HubModel {
     func install(_ e: CatalogEntry) {
         run(e) {
             let url = try await self.store.install(e)
-            // Reinstalado na mesma sessão: ficou em Staged/ e entra no próximo início.
-            if url.deletingLastPathComponent().lastPathComponent == "Staged", let m = PluginStore.manifest(at: url) {
-                await MainActor.run { self.staged[e.id] = m.version }
+            // Reinstalado na mesma sessão: ficou em Staged/ e entra no próximo início. Senão começa já, como no início.
+            if url.deletingLastPathComponent().lastPathComponent == "Staged" {
+                if let m = PluginStore.manifest(at: url) { await MainActor.run { self.staged[e.id] = m.version } }
+            } else {
+                await MainActor.run { PluginHost.start(folder: url, model: self) }
             }
         }
     }
@@ -75,7 +77,7 @@ extension HubModel {
             do { try await op(); failure = nil } catch { failure = Self.text(error) }
             await MainActor.run {
                 self.busy.remove(e.id)
-                self.problems[e.id] = failure
+                if let failure { self.problems[e.id] = failure } // sucesso não apaga o que o início do plugin anotou
                 self.reloadInstalled()
             }
         }
@@ -111,6 +113,14 @@ extension HubModel {
         objectWillChange.send()
     }
 
+    /// Pastas em `Plugins/` com manifest ilegível (problema guardado pelo nome da pasta, sem card do catálogo).
+    var brokenFolders: [String] { problems.keys.filter { $0.hasSuffix(".neyplugin") }.sorted() }
+
+    /// Nunca carregada (o manifest não abriu): dá para apagar já, sem esperar o reinício.
+    @MainActor func removeBroken(_ folder: String) {
+        if store.removeBroken(folder) { problems[folder] = nil }
+    }
+
     /// Só quando a pessoa pede: reabre depois que este processo sair, e o applyPending do início aplica o Staged/.
     func restartNow() {
         _ = updater?.applyStaged() // o NeyHub novo, se houver; falha deixa o atual intacto
@@ -136,6 +146,7 @@ struct StoreView: View {
                 ScrollView {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8, alignment: .top), GridItem(.flexible(), alignment: .top)], spacing: 8) {
                         ForEach(model.catalog, id: \.id) { StoreCard(model: model, entry: $0) }
+                        ForEach(model.brokenFolders, id: \.self) { BrokenCard(model: model, folder: $0) }
                     }
                     .padding(.bottom, 16)
                 }
@@ -238,7 +249,7 @@ struct StoreCard: View {
                     }
                     .padding(.top, 4)
                 }
-                if let problem = model.problems[entry.id] { ProblemText(problem).padding(.top, 6) }
+                if let problem = model.problems[entry.id] { ProblemText(problem, model: model).padding(.top, 6) }
             }
         }
     }
@@ -249,13 +260,39 @@ struct StoreCard: View {
     }
 }
 
+/// Aviso do card; parado por causa do avulso só volta reiniciando, então o botão vem junto.
 struct ProblemText: View {
     let text: String
-    init(_ text: String) { self.text = text }
+    let model: HubModel
+    init(_ text: String, model: HubModel) { self.text = text; self.model = model }
     var body: some View {
-        Label(text, systemImage: "exclamationmark.triangle")
-            .font(.system(size: 10)).foregroundStyle(Grafite.text)
-            .accessibilityElement(children: .combine)
+        HStack(spacing: 6) {
+            Label(text, systemImage: "exclamationmark.triangle")
+                .font(.system(size: 10)).foregroundStyle(Grafite.text)
+                .accessibilityElement(children: .combine)
+            if text == PluginHost.restartToResume {
+                Spacer(minLength: 0)
+                GPill(title: "Reiniciar NeyHub") { model.restartNow() }.accessibilityLabel("Reiniciar o NeyHub")
+            }
+        }
+    }
+}
+
+/// Pasta em `Plugins/` cujo manifest não abre: não é de nenhum app do catálogo, então ganha um card só para remover.
+struct BrokenCard: View {
+    @ObservedObject var model: HubModel
+    let folder: String
+    var body: some View {
+        GCard {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Text("Pasta \(folder) com problema").font(.system(size: 11, weight: .bold)).foregroundStyle(Grafite.strong).lineLimit(1)
+                    Spacer(minLength: 0)
+                    GPill(title: "Remover", style: .ghost) { model.removeBroken(folder) }.accessibilityLabel("Remover a pasta \(folder)")
+                }
+                if let problem = model.problems[folder] { ProblemText(problem, model: model) }
+            }
+        }
     }
 }
 

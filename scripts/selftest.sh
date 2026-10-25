@@ -60,6 +60,9 @@ printf '## [0.3.0]\n### Notas\n```md\n## [exemplo]\n```\n- c\n\n## [0.2.0]\n- b\
 [[ "$(scripts/changelog-section.sh 0.3.0 "$CL")" == $'### Notas\n```md\n## [exemplo]\n```\n- c' ]] || { echo "✗ changelog-section cortou no bloco de código" >&2; exit 1; }
 printf '## [0.3.0]\n~~~\n## [exemplo]\n~~~\n- c\n\n## [0.2.0]\n- b\n' > "$CL"
 [[ "$(scripts/changelog-section.sh 0.3.0 "$CL")" == $'~~~\n## [exemplo]\n~~~\n- c' ]] || { echo "✗ changelog-section cortou no bloco ~~~" >&2; exit 1; }
+# O release-app.sh lê o requisito fixo do NeyKit por grep: formato mudou = falha aqui, não na hora do release.
+LEAF=$(grep -o 'certificate leaf = H"[0-9a-f]\{40\}"' Sources/NeyKit/PluginSignature.swift || true)
+codesign -v --strict -R "=identifier \"local.neyhub\" and $LEAF" build/NeyHub.app 2>/dev/null || { echo "✗ requisito fixo do NeyKit não confere com build/NeyHub.app" >&2; exit 1; }
 NH=build/NeyHub.app/Contents/MacOS/NeyHub
 $NH --validate-manifest Fixtures/HelloPlugin/manifest.json >/dev/null || { echo "✗ manifest bom recusado" >&2; exit 1; }
 sed 's#libHelloPlugin.dylib#../x#' Fixtures/HelloPlugin/manifest.json > "$FIX/bad.json"

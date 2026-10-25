@@ -33,6 +33,15 @@ if let flag = arguments.firstIndex(of: "--snapshots"), arguments.indices.contain
     Snapshots.run(into: URL(fileURLWithPath: arguments[flag + 1]))
     exit(0)
 }
+// Instância única: outro NeyHub já aberto (open -n, outra cópia) é trazido à frente com a janela, e este sai.
+let me = ProcessInfo.processInfo.processIdentifier
+if let other = NSRunningApplication.runningApplications(withBundleIdentifier: "local.neyhub").first(where: { $0.processIdentifier != me && !$0.isTerminated }),
+   let url = other.bundleURL {
+    // Abrir o que já roda manda o "reabrir" (applicationShouldHandleReopen mostra a janela); só activate() não traz a janela fechada.
+    NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { _, _ in exit(0) }
+    RunLoop.main.run(until: Date().addingTimeInterval(5))
+    exit(0)
+}
 let delegate = AppDelegate()
 app.delegate = delegate
 app.run()

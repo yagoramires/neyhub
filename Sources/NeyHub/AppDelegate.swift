@@ -6,7 +6,6 @@ import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let model = HubModel()
-    private let host = HostBridge()
     private lazy var notifications = Notifications(model: model)
     private var window: NSWindow?
     private var awakeItem: AwakeStatusItem?
@@ -14,9 +13,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var updateTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.mainMenu = Self.mainMenu()
         notifications.install()
-        host.onOpenPermissions = { [self] in model.route = .permissions; showWindow() }
-        host.onShowScreen = { [self] id in model.showScreen(id); showWindow() }
+        model.registerCategories = { [notifications] in notifications.registerCategories() }
+        model.host.onOpenPermissions = { [self] in model.route = .permissions; showWindow() }
+        model.host.onShowScreen = { [self] id in model.showScreen(id); showWindow() }
         offerLoginItem()
         let applied = model.store.applyPending() // antes de qualquer plugin ser carregado
         model.openStore()          // catálogo do cache/embutido já; rede em segundo plano
@@ -24,8 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         awakeSub = model.awake.$showInMenuBar.sink { [self] show in // $: dispara já com o valor salvo
             awakeItem = show ? (awakeItem ?? AwakeStatusItem(awake: model.awake)) : nil
         }
-        PluginHost.startAll(model, store: model.store, host: host)
-        notifications.registerCategories()
+        PluginHost.startAll(model) // cada begin registra as categorias
         Task { await model.refreshPermissions() } // ponto da sidebar já no início
         startUpdates()
         showWhatsNew(applied)
@@ -77,6 +77,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if w.isMiniaturized { w.deminiaturize(nil) }
         w.makeKeyAndOrderFront(nil)
         NSApp.activate()
+    }
+
+    /// Mínimo para ⌘Q, ⌘W e editar texto (campos dos plugins). Sair passa pelo applicationWillTerminate.
+    static func mainMenu() -> NSMenu {
+        func item(_ title: String, _ action: Selector, _ key: String, _ mods: NSEvent.ModifierFlags = .command) -> NSMenuItem {
+            let i = NSMenuItem(title: title, action: action, keyEquivalent: key)
+            i.keyEquivalentModifierMask = mods
+            return i
+        }
+        func menu(_ title: String, _ items: [NSMenuItem]) -> NSMenuItem {
+            let sub = NSMenu(title: title)
+            items.forEach(sub.addItem)
+            let top = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+            top.submenu = sub
+            return top
+        }
+        let main = NSMenu()
+        main.addItem(menu("NeyHub", [item("Sobre o NeyHub", #selector(NSApplication.orderFrontStandardAboutPanel(_:)), ""), .separator(),
+                                     item("Sair do NeyHub", #selector(NSApplication.terminate(_:)), "q")]))
+        main.addItem(menu("Editar", [item("Desfazer", Selector(("undo:")), "z"), item("Refazer", Selector(("redo:")), "z", [.command, .shift]),
+                                     .separator(), item("Recortar", #selector(NSText.cut(_:)), "x"), item("Copiar", #selector(NSText.copy(_:)), "c"),
+                                     item("Colar", #selector(NSText.paste(_:)), "v"), item("Selecionar tudo", #selector(NSText.selectAll(_:)), "a")]))
+        main.addItem(menu("Janela", [item("Fechar", #selector(NSWindow.performClose(_:)), "w"),
+                                     item("Minimizar", #selector(NSWindow.performMiniaturize(_:)), "m")]))
+        return main
     }
 
     /// Registra como item de login só na primeira execução; falha só vai pro log.

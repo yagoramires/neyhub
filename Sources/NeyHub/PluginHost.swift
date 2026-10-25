@@ -19,6 +19,9 @@ enum PluginHost {
     private static var launchObserver: NSKeyValueObservation?
     /// ids com alerta de conflito aberto: um segundo lançamento do avulso não empilha outro.
     private static var alerting: Set<String> = []
+    /// Pausados no início (carregados, nunca iniciados) e parados em uso por causa do avulso.
+    private static var waiting: [String: LoadedPlugin] = [:]
+    private static var stopped: Set<String> = []
 
     static func load(folder: URL) -> Result<LoadedPlugin, LoadError> {
         guard let data = try? Data(contentsOf: folder.appendingPathComponent("manifest.json")),
@@ -67,23 +70,48 @@ enum PluginHost {
     // MARK: - Início
 
     /// Chamar depois do `applyPending`. Avulso aberto pergunta antes; quem não carrega ganha o motivo no card.
-    static func startAll(_ model: HubModel, store: PluginStore, host: HostBridge) {
+    static func startAll(_ model: HubModel) {
         writeActive(model) // zera o de uma sessão que caiu: avulso pausado não pode achar que está hospedado
-        for folder in store.installedFolders() {
-            switch load(folder: folder) {
-            case .failure(let e):
-                model.problems[PluginStore.manifest(at: folder)?.id ?? folder.lastPathComponent] = problemText(e)
-            case .success(let p):
-                let id = p.manifest.id
-                guard let other = conflict(id: id) else { begin(p, model: model, host: host); continue }
-                offerClose(other, name: p.manifest.name) { closed in
-                    // Durante a espera: outro avulso pode ter aberto ou a pessoa pode ter desinstalado.
-                    if store.isMarkedForRemoval(id) { return }
-                    if closed, conflict(id: id) == nil { begin(p, model: model, host: host) } else { model.problems[id] = paused }
-                }
+        for folder in model.store.installedFolders() { start(folder: folder, model: model) }
+        observeLaunches(model)
+    }
+
+    /// Início e instalação pela Loja: carrega, pergunta se o avulso está aberto e inicia.
+    /// Manifest ilegível não tem id: o problema fica com o nome da pasta (card "Pasta … com problema").
+    static func start(folder: URL, model: HubModel) {
+        switch load(folder: folder) {
+        case .failure(.manifest):
+            model.problems[folder.lastPathComponent] = problemText(.manifest)
+        case .failure(let e):
+            model.problems[PluginStore.manifest(at: folder)?.id ?? folder.lastPathComponent] = problemText(e)
+        case .success(let p):
+            let id = p.manifest.id
+            guard let other = conflict(id: id) else { return begin(p, model: model) }
+            offerClose(other, name: p.manifest.name) { closed in
+                // Durante a espera: outro avulso pode ter aberto ou a pessoa pode ter desinstalado.
+                if model.store.isMarkedForRemoval(id) { return }
+                if closed, conflict(id: id) == nil { begin(p, model: model) } else { pause(p, model: model) }
             }
         }
-        observeLaunches(model)
+    }
+
+    /// Carregado e nunca iniciado: começa quando o avulso fechar (`resume`).
+    static func pause(_ p: LoadedPlugin, model: HubModel) {
+        waiting[p.manifest.id] = p
+        model.problems[p.manifest.id] = paused
+    }
+
+    /// Avulso fechou: o pausado no início começa; o parado em uso não (o entry não roda de novo e `start` depois de
+    /// `stop` não é garantido), só troca o aviso por "reinicie o NeyHub".
+    static func resume(_ model: HubModel) {
+        for (id, p) in waiting where conflict(id: id) == nil {
+            waiting[id] = nil
+            if !model.store.isMarkedForRemoval(id) { begin(p, model: model) }
+        }
+        for id in stopped where conflict(id: id) == nil {
+            stopped.remove(id)
+            if model.problems[id] == paused { model.problems[id] = restartToResume }
+        }
     }
 
     /// Avulso do mesmo app aberto (o NeyHub nunca é o avulso de um plugin).
@@ -92,6 +120,7 @@ enum PluginHost {
     }
 
     static let paused = "Pausado: avulso aberto"
+    static let restartToResume = "Pausado — reinicie o NeyHub para voltar"
 
     /// Avulso que declara `NeyHubAware` no Info.plist mostra o próprio alerta (HubCheck) e sai: o NeyHub não mostra o dele.
     /// Contrato: só declare `NeyHubAware = true` num app que chama `HubCheck.leaveForHub` ao abrir; senão ninguém avisa
@@ -100,15 +129,17 @@ enum PluginHost {
         bundleURL.flatMap(Bundle.init(url:))?.object(forInfoDictionaryKey: "NeyHubAware") as? Bool == true
     }
 
-    static func begin(_ p: LoadedPlugin, model: HubModel, host: HostBridge) {
-        p.plugin.start(host: host)
+    static func begin(_ p: LoadedPlugin, model: HubModel) {
+        p.plugin.start(host: model.host)
         model.loaded.append(p)
         model.problems[p.manifest.id] = nil
         apply(Presence.load(AppDefaults.forApp(p.manifest.id), hasScreen: p.manifest.hasScreen), to: p, model: model)
         writeActive(model)
+        model.registerCategories() // idempotente: quem começa depois (Loja, avulso fechado) também ganha as dele
     }
 
     /// Avulso aberto com o NeyHub já rodando o plugin: mesmo alerta. "Agora não" para o plugin (dois processos no mesmo `dados.json`).
+    /// Avulso que sai: o pausado volta (`resume`).
     /// KVO em `runningApplications`, não `didLaunchApplicationNotification`: ela não vem para apps de barra de menus (accessory).
     private static func observeLaunches(_ model: HubModel) {
         guard launchObserver == nil else { return }
@@ -118,6 +149,7 @@ enum PluginHost {
             // Fora do callback do KVO: o alerta é modal.
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
+                    resume(model) // barato; não depende de o KVO dizer que foi remoção
                     for app in apps where !app.isTerminated {
                         guard let p = model.loaded.first(where: { $0.manifest.id == app.bundleIdentifier }),
                               !handlesConflictItself(app.bundleURL) else { continue }
@@ -127,14 +159,20 @@ enum PluginHost {
                             alerting.remove(id)
                             // Desinstalado enquanto isso já levou stop(): nunca duas vezes.
                             guard !closed, model.loaded.contains(where: { $0.manifest.id == id }) else { return }
-                            drop(p, model: model) // tira do active.json antes do stop(): o HubCheck do avulso confere depois de responder
-                            p.plugin.stop()
-                            model.problems[id] = paused
+                            stopForConflict(p, model: model)
                         }
                     }
                 }
             }
         }
+    }
+
+    /// "Agora não" com o plugin em uso: para e fica parado até o NeyHub reiniciar (`resume` só troca o aviso).
+    static func stopForConflict(_ p: LoadedPlugin, model: HubModel) {
+        drop(p, model: model) // tira do active.json antes do stop(): o HubCheck do avulso confere depois de responder
+        p.plugin.stop()
+        stopped.insert(p.manifest.id)
+        model.problems[p.manifest.id] = paused
     }
 
     /// Alerta Grafite. Fechar encerra o avulso e espera ele sair sem travar a main; `done(false)` se recusou ou não saiu em 5 s.

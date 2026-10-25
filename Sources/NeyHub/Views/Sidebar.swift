@@ -15,6 +15,10 @@ final class HubModel: ObservableObject {
     /// Tela de cada plugin, criada uma vez: trocar de item na sidebar não recria.
     var screens: [String: NSViewController] = [:]
     let awake = AwakeModel()
+    /// Ponte entregue a cada plugin em `start(host:)`.
+    let host = HostBridge()
+    /// O AppDelegate liga ao `Notifications`; o selftest conta as chamadas (sem tocar no centro de notificações real).
+    var registerCategories: () -> Void = {}
 
     // Loja (StoreView.swift)
     let store: PluginStore

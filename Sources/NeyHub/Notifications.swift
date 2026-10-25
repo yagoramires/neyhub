@@ -24,10 +24,9 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
         return out
     }
 
-    /// Delegate cedo (resposta que abriu o app chega no lançamento); categorias depois de os plugins iniciarem.
+    /// Delegate cedo (resposta que abriu o app chega no lançamento); categorias a cada plugin que começa (`PluginHost.begin`).
     func install() { UNUserNotificationCenter.current().delegate = self }
 
-    // shortcut: só plugins carregados até aqui entram; um plugin que começa depois (avulso fechado) só passa a valer no próximo início.
     @MainActor func registerCategories() {
         let lists = model.loaded.map { ($0.manifest.id, $0.plugin.notificationCategories?() ?? []) }
         UNUserNotificationCenter.current().setNotificationCategories(Self.merge(lists))
@@ -50,6 +49,6 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
                                 withCompletionHandler done: @escaping (UNNotificationPresentationOptions) -> Void) {
-        done([.banner, .sound])
+        done([.banner, .list, .sound])
     }
 }

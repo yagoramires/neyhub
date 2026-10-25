@@ -15,6 +15,7 @@ enum SelfTest {
         store()
         notifications()
         awake()
+        lifecycle()
         if let fixture { plugins(fixture); storeInstall(fixture); storeUpdates(fixture) } else { FileHandle.standardError.write(Data("sem --fixture: pulando carga de plugins\n".utf8)) }
     }
 
@@ -93,10 +94,11 @@ enum SelfTest {
     @MainActor static func plugins(_ dir: URL) {
         func folder(_ name: String) -> URL { dir.appendingPathComponent("\(name)/Hello.neyplugin") }
         let good = folder("good")
-        guard case .success(let p) = PluginHost.load(folder: good) else { preconditionFailure("good: \(PluginHost.load(folder: good))") }
+        let (model, root) = installFromStore(dir)
+        let p = model.loaded[0]
         precondition(p.plugin.contractVersion == 1 && p.plugin.makeScreen() != nil)
         precondition(PluginHost.dlopenCount == 1)
-        precondition(PluginHost.load(folder: good).failure == .alreadyLoaded)
+        precondition(PluginHost.load(folder: good).failure == .alreadyLoaded && PluginHost.load(folder: p.folder).failure == .alreadyLoaded)
         precondition(PluginHost.load(folder: folder("adhoc")).failure == .signature)
         precondition(PluginHost.load(folder: folder("tampered")).failure == .signature)
         precondition(PluginHost.load(folder: folder("future")).failure == .contractTooNew(2))
@@ -109,14 +111,14 @@ enum SelfTest {
         try! fm.createDirectory(at: other, withIntermediateDirectories: true)
         try! Data(#"{"id":"local.outro","name":"Outro","version":"1.0.0","contract":1,"hasScreen":true,"permissions":[],"binary":"libHelloPlugin.dylib"}"#.utf8)
             .write(to: other.appendingPathComponent("manifest.json"))
-        try! fm.linkItem(at: good.appendingPathComponent("libHelloPlugin.dylib"), to: other.appendingPathComponent("libHelloPlugin.dylib"))
+        try! fm.linkItem(at: p.folder.appendingPathComponent("libHelloPlugin.dylib"), to: other.appendingPathComponent("libHelloPlugin.dylib"))
         precondition(PluginHost.load(folder: other).failure == .alreadyLoaded && PluginHost.dlopenCount == 1)
 
-        hosting(p)
+        hosting(p, model: model, root: root)
     }
 
-    /// Início, presença, tela embutida e desinstalar com o plugin `good` já carregado (start/stop uma vez só).
-    @MainActor static func hosting(_ p: LoadedPlugin) {
+    /// Presença, tela embutida e desinstalar com o plugin já iniciado pela Loja (start/stop uma vez só).
+    @MainActor static func hosting(_ p: LoadedPlugin, model: HubModel, root: URL) {
         let fm = FileManager.default
         precondition(PluginHost.problemText(.contractTooNew(2)) == "Precisa atualizar o NeyHub")
         precondition(PluginHost.problemText(.signature) == "Assinatura não confere — reinstale pela Loja")
@@ -136,19 +138,10 @@ enum SelfTest {
         precondition(!PluginHost.handlesConflictItself(fakeApp(["CFBundleIdentifier": "local.x", "NeyHubAware": "yes"])))
         precondition(!PluginHost.handlesConflictItself(nil))
 
-        let root = temp("host")
         defer { try? fm.removeItem(at: root) }
-        let store = PluginStore(root: root)
-        let model = HubModel(store: store)
+        let store = model.store, host = model.host
         func count(_ key: String) -> Int? { (p.plugin as AnyObject).value(forKey: key) as? Int }
         func active() -> [String]? { try? JSONDecoder().decode([String].self, from: Data(contentsOf: root.appendingPathComponent("active.json"))) }
-
-        // Ponte host↔plugin atravessa as duas imagens; contadores lidos por KVC (a classe mora no plugin).
-        let host = HostBridge()
-        PluginHost.begin(p, model: model, host: host)
-        precondition(host.messages == ["Olá do plugin"] && model.loaded.map(\.manifest.id) == ["local.hello"])
-        precondition(active() == ["local.hello"], "active.json sem o iniciado")
-        precondition(count("menuBarCalls") == 1, "begin não aplicou a presença")
 
         // Sem tela: pedir tela não liga a tela nem põe na sidebar (ícone escondido é permitido: o app segue rodando).
         let noScreen = HubModel(store: store)
@@ -197,6 +190,85 @@ enum SelfTest {
 }
 
 extension SelfTest {
+    /// Instalar pela Loja carrega e inicia na hora (primeira e única carga do fixture neste processo).
+    @MainActor static func installFromStore(_ fixture: URL) -> (HubModel, URL) {
+        let root = temp("loja"), assets = temp("loja-assets")
+        let zip = zipFixture(fixture, "good", into: assets, as: "Hello-1.0.0.neyplugin")
+        let latest = assets.appendingPathComponent("latest.json")
+        try! Data(#"{"tag_name":"v1.0.0","html_url":"https://e","assets":[{"name":"Hello-1.0.0.neyplugin","browser_download_url":"\#(zip.absoluteString)"}]}"#.utf8).write(to: latest)
+        let store = PluginStore(root: root)
+        store.latestURL = { _ in latest }
+        let model = HubModel(store: store)
+        var registered = 0
+        model.registerCategories = { registered += 1 }
+        let hello = CatalogEntry(id: "local.hello", name: "Hello", repo: "x/hello", summary: "", hasScreen: true)
+        model.install(hello)
+        let deadline = Date().addingTimeInterval(10)
+        while model.busy.contains(hello.id), Date() < deadline { RunLoop.main.run(until: Date().addingTimeInterval(0.02)) }
+        precondition(model.loaded.map(\.manifest.id) == ["local.hello"], "instalar pela Loja não iniciou o plugin: \(model.problems)")
+        // Ponte host↔plugin atravessa as duas imagens; contadores lidos por KVC (a classe mora no plugin).
+        let plugin = model.loaded[0].plugin as AnyObject
+        precondition(model.host.messages == ["Olá do plugin"] && PluginHost.dlopenCount == 1, "start não rodou uma vez")
+        precondition(plugin.value(forKey: "menuBarCalls") as? Int == 1 && plugin.value(forKey: "stopCount") as? Int == 0, "begin não aplicou a presença")
+        let active = try? JSONDecoder().decode([String].self, from: Data(contentsOf: root.appendingPathComponent("active.json")))
+        precondition(active == ["local.hello"], "active.json sem o iniciado")
+        precondition(registered == 1 && model.problems.isEmpty && model.installed["local.hello"] != nil, "categorias/card depois de instalar")
+        try? FileManager.default.removeItem(at: assets)
+        return (model, root)
+    }
+
+    /// Pausa por avulso aberto, volta ao fechar, pasta quebrada e menu principal. Plugin falso: o fixture só carrega uma vez.
+    @MainActor static func lifecycle() {
+        let fm = FileManager.default
+        let root = temp("ciclo")
+        defer { try? fm.removeItem(at: root) }
+        let model = HubModel(store: PluginStore(root: root))
+        var registered = 0
+        model.registerCategories = { registered += 1 }
+        func fake(_ id: String) -> (FakePlugin, LoadedPlugin) {
+            let m = try! JSONDecoder().decode(PluginManifest.self, from: Data(
+                #"{"id":"\#(id)","name":"Falso","version":"1.0.0","contract":1,"hasScreen":false,"permissions":[],"binary":"x.dylib"}"#.utf8))
+            let f = FakePlugin()
+            return (f, LoadedPlugin(manifest: m, plugin: f, folder: root))
+        }
+        // Nenhum app roda com esses ids: para o resume, o avulso "fechou".
+        let (a, pa) = fake("local.falso.a"), (b, pb) = fake("local.falso.b"), (c, pc) = fake("local.falso.c")
+        PluginHost.pause(pa, model: model)
+        PluginHost.pause(pb, model: model)
+        model.store.markForRemoval(id: "local.falso.b") // desinstalado enquanto pausado: não começa
+        precondition(model.problems["local.falso.a"] == PluginHost.paused && a.starts == 0 && model.loaded.isEmpty)
+        PluginHost.resume(model)
+        precondition(a.starts == 1 && b.starts == 0 && model.loaded.map(\.manifest.id) == ["local.falso.a"], "pausado não começou")
+        precondition(model.problems["local.falso.a"] == nil && registered == 1, "begin sem categorias")
+        PluginHost.resume(model)
+        precondition(a.starts == 1, "começou duas vezes")
+        // Parado em uso: nunca começa de novo; o card passa a pedir reinício.
+        PluginHost.begin(pc, model: model)
+        PluginHost.stopForConflict(pc, model: model)
+        precondition(c.stops == 1 && model.problems["local.falso.c"] == PluginHost.paused && !model.loaded.contains { $0.manifest.id == "local.falso.c" })
+        PluginHost.resume(model)
+        precondition(c.starts == 1 && model.problems["local.falso.c"] == PluginHost.restartToResume, "parado não pediu reinício")
+
+        // Manifest ilegível: problema pelo nome da pasta, card próprio, Remover apaga sem carregar nada.
+        let dl = PluginHost.dlopenCount
+        let bad = root.appendingPathComponent("Plugins/Quebrado.neyplugin")
+        try! fm.createDirectory(at: bad, withIntermediateDirectories: true)
+        try! Data("{".utf8).write(to: bad.appendingPathComponent("manifest.json"))
+        PluginHost.start(folder: bad, model: model)
+        precondition(model.brokenFolders == ["Quebrado.neyplugin"] && PluginHost.dlopenCount == dl)
+        model.removeBroken("Quebrado.neyplugin")
+        precondition(!fm.fileExists(atPath: bad.path) && model.brokenFolders.isEmpty)
+        precondition(!model.store.removeBroken("../Plugins.neyplugin") && !model.store.removeBroken("x"))
+
+        // Menu principal: ⌘Q pelo terminate (applicationWillTerminate apaga o active.json), edição pelos seletores padrão.
+        let items = AppDelegate.mainMenu().items.flatMap { $0.submenu?.items ?? [] }
+        let quit = items.first { $0.keyEquivalent == "q" }
+        precondition(quit?.action == #selector(NSApplication.terminate(_:)) && quit?.keyEquivalentModifierMask == .command)
+        let actions = Set(items.compactMap { $0.action.map(NSStringFromSelector) })
+        precondition(actions.isSuperset(of: ["undo:", "redo:", "cut:", "copy:", "paste:", "selectAll:", "performClose:", "performMiniaturize:"]), "\(actions)")
+        precondition(items.first { $0.action == Selector(("redo:")) }?.keyEquivalentModifierMask == [.command, .shift])
+    }
+
     /// Pasta temporária `$TMPDIR/nh-<nome>` limpa; o selftest.sh apaga nh-* no fim.
     static func temp(_ name: String) -> URL {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("nh-\(name)-\(UUID().uuidString)")
@@ -489,6 +561,17 @@ extension SelfTest {
 extension Result {
     /// Só para teste: o erro, ou nil se deu certo.
     var failure: Failure? { if case .failure(let e) = self { e } else { nil } }
+}
+
+/// Plugin falso do `lifecycle`: mora no NeyHub, conta start/stop.
+final class FakePlugin: NSObject, NeyPlugin {
+    var starts = 0, stops = 0
+    var contractVersion: Int { 1 }
+    func start(host: NeyHost) { starts += 1 }
+    func stop() { stops += 1 }
+    func setMenuBarVisible(_ visible: Bool) {}
+    func makeScreen() -> NSViewController? { nil }
+    func makeSettings() -> NSViewController { NSViewController() }
 }
 
 /// Servidor falso: rotas por URL completa; sem rota responde 404. Só para o selftest.
