@@ -1,4 +1,5 @@
 import AppKit
+import CryptoKit
 import NeyKit
 import NeyKitApp
 import UserNotifications
@@ -14,7 +15,7 @@ enum SelfTest {
         store()
         notifications()
         awake()
-        if let fixture { plugins(fixture); storeInstall(fixture) } else { FileHandle.standardError.write(Data("sem --fixture: pulando carga de plugins\n".utf8)) }
+        if let fixture { plugins(fixture); storeInstall(fixture); storeUpdates(fixture) } else { FileHandle.standardError.write(Data("sem --fixture: pulando carga de plugins\n".utf8)) }
     }
 
     static func awake() {
@@ -306,15 +307,7 @@ extension SelfTest {
         let fm = FileManager.default
         let root = temp("install"), assets = temp("assets")
         defer { try? fm.removeItem(at: root); try? fm.removeItem(at: assets) }
-        func zip(_ kind: String, as name: String) -> URL {
-            let out = assets.appendingPathComponent(name)
-            let p = Process()
-            p.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-            p.arguments = ["-c", "-k", "--keepParent", fixture.appendingPathComponent("\(kind)/Hello.neyplugin").path, out.path]
-            try! p.run(); p.waitUntilExit()
-            precondition(p.terminationStatus == 0)
-            return out
-        }
+        func zip(_ kind: String, as name: String) -> URL { zipFixture(fixture, kind, into: assets, as: name) }
         let good = zip("good", as: "Hello-1.0.0.neyplugin"), adhoc = zip("adhoc", as: "Hello-1.0.1.neyplugin")
         let future = zip("future", as: "Hello-1.0.2.neyplugin")
         let latestJSON = assets.appendingPathComponent("latest.json")
@@ -375,6 +368,93 @@ extension SelfTest {
         precondition(!fm.fileExists(atPath: marker.path) && !fm.fileExists(atPath: url.path))
     }
 
+    static func zipFixture(_ fixture: URL, _ kind: String, into dir: URL, as name: String) -> URL {
+        let out = dir.appendingPathComponent(name)
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+        p.arguments = ["-c", "-k", "--keepParent", fixture.appendingPathComponent("\(kind)/Hello.neyplugin").path, out.path]
+        try! p.run(); p.waitUntilExit()
+        precondition(p.terminationStatus == 0)
+        return out
+    }
+
+    /// Hash de caminhos + bytes da pasta inteira: prova que o instalado ficou intacto.
+    static func digest(_ folder: URL) -> String {
+        let fm = FileManager.default
+        var h = SHA256()
+        for path in (fm.subpaths(atPath: folder.path) ?? []).sorted() {
+            h.update(data: Data(path.utf8))
+            if let d = fm.contents(atPath: folder.appendingPathComponent(path).path) { h.update(data: d) }
+        }
+        return h.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// Atualização com servidor falso (URLProtocol na sessão do PluginStore): nada toca a rede.
+    static func storeUpdates(_ fixture: URL) {
+        let fm = FileManager.default
+        let root = temp("updates"), assets = temp("upassets")
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: assets) }
+        let good = zipFixture(fixture, "good", into: assets, as: "g.zip"), future = zipFixture(fixture, "future", into: assets, as: "f.zip")
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [FakeServer.self]
+        let store = PluginStore(root: root)
+        store.session = URLSession(configuration: config)
+        store.latestURL = { URL(string: "https://fake.test/\($0)/latest")! }
+        func serve(_ repo: String, _ version: String, _ asset: URL, notes: String = "") {
+            let name = "Hello-\(version).neyplugin", url = "https://fake.test/dl/\(repo)/\(name)"
+            let body: [String: Any] = ["tag_name": "v\(version)", "html_url": "https://e", "body": notes,
+                                       "assets": [["name": name, "browser_download_url": url]]]
+            FakeServer.routes["https://fake.test/\(repo)/latest"] = try! JSONSerialization.data(withJSONObject: body)
+            FakeServer.routes[url] = try! Data(contentsOf: asset)
+        }
+        FakeServer.reset()
+
+        // Instalado velho (0.9.0): só o manifest muda, a assinatura é do binário.
+        let installed = root.appendingPathComponent("Plugins/Hello.neyplugin")
+        try! fm.createDirectory(at: installed.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try! fm.copyItem(at: fixture.appendingPathComponent("good/Hello.neyplugin"), to: installed)
+        let manifest = installed.appendingPathComponent("manifest.json")
+        try! Data(String(contentsOf: manifest, encoding: .utf8).replacingOccurrences(of: "1.0.0", with: "0.9.0").utf8).write(to: manifest)
+        let before = digest(installed)
+        let hello = CatalogEntry(id: "local.hello", name: "Hello", repo: "x/hello", summary: "", hasScreen: true)
+        let broken = CatalogEntry(id: "local.sumido", name: "Sumido", repo: "x/sumido", summary: "", hasScreen: false) // sem rota: 404
+        func check() -> (latest: [String: Release], staged: [String: String]) { wait { await store.checkUpdates([hello]) } }
+
+        // Contract 2: recusa e o instalado fica byte a byte igual.
+        serve("x/hello", "1.0.0", future)
+        precondition(waitError { try await store.stageUpdate(hello, release: wait { await store.latest("x/hello") }!) } == .contract(2))
+        precondition(digest(installed) == before && store.stagedVersions().isEmpty, "contract 2 mexeu no instalado")
+        precondition(check().staged.isEmpty && digest(installed) == before)
+
+        // Caminho feliz: um plugin com falha não impede o seguinte; notas persistem ao lado de Staged/.
+        serve("x/hello", "1.0.0", good, notes: "- novo")
+        FakeServer.reset(keepingRoutes: true)
+        let all = wait { await store.checkUpdates([broken, hello]) }
+        precondition(all.staged == ["local.hello": "1.0.0"] && all.latest["local.hello"]?.version == "1.0.0" && all.latest["local.sumido"] == nil)
+        precondition(digest(installed) == before, "preparar não troca o instalado")
+        precondition(FakeServer.hits("https://fake.test/dl/x/hello/Hello-1.0.0.neyplugin") == 1)
+        let model = HubModel(store: store)
+        precondition(model.staged.isEmpty)
+        model.absorb(all)
+        precondition(!model.staged.isEmpty && model.latest["local.hello"] != nil, "banner não acendeu")
+
+        // Já preparada na mesma versão: não baixa de novo.
+        precondition(check().staged.isEmpty && FakeServer.hits("https://fake.test/dl/x/hello/Hello-1.0.0.neyplugin") == 1)
+
+        // Só applyPending troca, e informa o que trocou com as notas (que são apagadas).
+        let applied = store.applyPending()
+        precondition(applied == [AppliedUpdate(name: "Hello", version: "1.0.0", notes: "- novo")], "\(applied)")
+        precondition(PluginStore.manifest(at: installed)?.version == "1.0.0" && store.stagedVersions().isEmpty)
+        precondition((try! fm.contentsOfDirectory(atPath: root.appendingPathComponent("Staged").path)).isEmpty, "notas não foram apagadas")
+        precondition(store.applyPending().isEmpty)
+
+        // Marcado para remoção: nada é preparado (manifest velho de novo, release mais nova).
+        try! Data(String(contentsOf: manifest, encoding: .utf8).replacingOccurrences(of: "1.0.0", with: "0.9.0").utf8).write(to: manifest)
+        store.markForRemoval(id: "local.hello")
+        FakeServer.reset(keepingRoutes: true)
+        precondition(check().staged.isEmpty && FakeServer.hits("https://fake.test/dl/x/hello/Hello-1.0.0.neyplugin") == 0)
+    }
+
     /// O selftest roda síncrono na main; as chamadas async rodam fora dela.
     static func wait<T>(_ op: @escaping () async -> T) -> T {
         let done = DispatchSemaphore(value: 0)
@@ -398,4 +478,27 @@ extension SelfTest {
 extension Result {
     /// Só para teste: o erro, ou nil se deu certo.
     var failure: Failure? { if case .failure(let e) = self { e } else { nil } }
+}
+
+/// Servidor falso: rotas por URL completa; sem rota responde 404. Só para o selftest.
+final class FakeServer: URLProtocol {
+    static let lock = NSLock()
+    nonisolated(unsafe) static var routes: [String: Data] = [:]
+    nonisolated(unsafe) static var counts: [String: Int] = [:]
+    static func reset(keepingRoutes: Bool = false) { lock.lock(); if !keepingRoutes { routes = [:] }; counts = [:]; lock.unlock() }
+    static func hits(_ url: String) -> Int { lock.lock(); defer { lock.unlock() }; return counts[url] ?? 0 }
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        let url = request.url!
+        Self.lock.lock()
+        Self.counts[url.absoluteString, default: 0] += 1
+        let data = Self.routes[url.absoluteString]
+        Self.lock.unlock()
+        client?.urlProtocol(self, didReceive: HTTPURLResponse(url: url, statusCode: data == nil ? 404 : 200, httpVersion: nil, headerFields: nil)!, cacheStoragePolicy: .notAllowed)
+        if let data { client?.urlProtocol(self, didLoad: data) }
+        client?.urlProtocolDidFinishLoading(self)
+    }
+    override func stopLoading() {}
 }

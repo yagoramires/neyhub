@@ -39,7 +39,7 @@ Ainda não há. O plano é cada app poder aparecer como tela no NeyHub, como íc
 
 ## Atualizações
 
-Ainda não há atualização automática.
+O NeyHub confere o GitHub 5 s depois de abrir e a cada 6 h: a versão nova dele e a de cada plugin instalado. Tudo é baixado em segundo plano, conferido (assinatura, contrato, id e versão) e guardado; nada é trocado com o app em uso. Quando há algo pronto, a Loja mostra "Atualizações prontas" com o botão **Reiniciar agora**. Se você não clicar, a atualização entra no próximo início (o NeyHub nunca reinicia sozinho). Um plugin com contrato diferente do NeyHub instalado é recusado e a versão atual continua intacta. Depois de atualizar, uma janela mostra as novidades do NeyHub e de cada plugin que mudou.
 
 ## Build local
 

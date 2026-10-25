@@ -163,7 +163,8 @@ public final class Updater {
         guard applyStaged() else { return }
         let relaunch = Process()
         relaunch.executableURL = URL(fileURLWithPath: "/bin/sh")
-        relaunch.arguments = ["-c", "sleep 1; /usr/bin/open \"$0\"", Self.currentApp.path]
+        relaunch.arguments = ["-c", #"while /bin/kill -0 "$1" 2>/dev/null; do sleep 0.2; done; /usr/bin/open "$0""#,
+                              Self.currentApp.path, String(ProcessInfo.processInfo.processIdentifier)]
         do { try relaunch.run() } catch { log("não deu pra reabrir (\(error.localizedDescription))") }
         NSApp.terminate(nil)
     }

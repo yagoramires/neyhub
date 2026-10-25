@@ -144,7 +144,7 @@ enum PluginHost {
         alert.messageText = "O \(name) avulso está aberto. Fechar e usar pelo NeyHub?"
         alert.addButton(withTitle: "Fechar")
         alert.addButton(withTitle: "Agora não")
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         let answer = alert.runModal()
         // O avulso saiu sozinho (HubCheck) enquanto o alerta estava aberto: segue no NeyHub, qualquer que seja a resposta.
         if app.isTerminated { return done(true) }

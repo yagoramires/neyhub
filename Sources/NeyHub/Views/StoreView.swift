@@ -1,5 +1,6 @@
 import AppKit
 import NeyKit
+import NeyKitApp
 import SwiftUI
 
 // MARK: - Ações da Loja
@@ -19,6 +20,20 @@ extension HubModel {
                 if let r = await self.store.latest(e.repo) { await MainActor.run { self.latest[e.id] = r } }
             }
         }
+    }
+
+    /// Ciclo de atualização dos plugins (AppDelegate: 5 s depois de abrir, depois a cada 6 h). Pula cards ocupados.
+    func checkPluginUpdates() {
+        Task.detached { [self] in
+            let entries = await MainActor.run { self.catalog.filter { !self.busy.contains($0.id) } }
+            let result = await store.checkUpdates(entries)
+            await MainActor.run { self.absorb(result) }
+        }
+    }
+
+    func absorb(_ result: (latest: [String: Release], staged: [String: String])) {
+        latest.merge(result.latest) { _, new in new }
+        staged.merge(result.staged) { _, new in new }
     }
 
     func reloadInstalled() {
@@ -92,6 +107,7 @@ extension HubModel {
 
     /// Só quando a pessoa pede: reabre depois que este processo sair, e o applyPending do início aplica o Staged/.
     func restartNow() {
+        _ = updater?.applyStaged() // o NeyHub novo, se houver; falha deixa o atual intacto
         let relaunch = Process()
         relaunch.executableURL = URL(fileURLWithPath: "/bin/sh")
         relaunch.arguments = ["-c", #"while /bin/kill -0 "$1" 2>/dev/null; do sleep 0.2; done; /usr/bin/open "$0""#,
@@ -114,7 +130,7 @@ struct StoreView: View {
                 Text("Loja").font(.system(size: 16, weight: .semibold)).foregroundStyle(Grafite.strong)
                     .accessibilityAddTraits(.isHeader)
                 Text(subtitle).font(.system(size: 11)).foregroundStyle(Grafite.muted)
-                if !model.staged.isEmpty { StagedBanner(model: model).padding(.top, 10) }
+                if !model.staged.isEmpty || model.hubStaged != nil { StagedBanner(model: model).padding(.top, 10) }
                 ScrollView {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8, alignment: .top), GridItem(.flexible(), alignment: .top)], spacing: 8) {
                         ForEach(model.catalog, id: \.id) { StoreCard(model: model, entry: $0) }

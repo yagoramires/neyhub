@@ -7,17 +7,26 @@ public enum WhatsNew {
     private static var window: NSWindow?
 
     public static func show(name: String, version: String, notes: String) {
+        show(title: "Novidades do \(name)", heading: "\(name) \(version)", notes: notes)
+    }
+
+    /// Uma janela só para vários apps: uma seção `## Nome versão` por item.
+    public static func show(sections: [(title: String, notes: String)]) {
+        show(title: "Novidades", heading: "Atualizado", notes: sections.map { "## \($0.title)\n\($0.notes)" }.joined(separator: "\n\n"))
+    }
+
+    private static func show(title: String, heading: String, notes: String) {
         window?.close()
         let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 420, height: 360),
                          styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
-        w.title = "Novidades do \(name)"
+        w.title = title
         w.titlebarAppearsTransparent = true
         w.isReleasedWhenClosed = false
         w.backgroundColor = NSColor(Grafite.bg)
-        w.contentView = NSHostingView(rootView: NotesView(title: "\(name) \(version)", notes: notes) { window?.close() })
+        w.contentView = NSHostingView(rootView: NotesView(title: heading, notes: notes) { window?.close() })
         w.center()
         window = w
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         w.makeKeyAndOrderFront(nil)
     }
 }

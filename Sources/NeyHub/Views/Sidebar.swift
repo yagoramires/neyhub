@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import NeyKit
+import NeyKitApp
 import SwiftUI
 
 enum Route: Hashable { case store, permissions, app(String) }
@@ -21,6 +22,9 @@ final class HubModel: ObservableObject {
     @Published var installed: [String: PluginManifest] = [:] // id → manifest em Plugins/
     @Published var latest: [String: Release] = [:]           // id → última release no GitHub
     @Published var staged: [String: String] = [:]            // id → versão pronta para o próximo início
+    @Published var hubStaged: String?                        // versão do próprio NeyHub pronta para o próximo início
+    /// Updater do próprio NeyHub (AppDelegate); "Reiniciar agora" aplica antes de reabrir.
+    var updater: Updater?
     @Published var busy: Set<String> = []
     @Published var detail: String?                           // id aberto no detalhe da Loja
 

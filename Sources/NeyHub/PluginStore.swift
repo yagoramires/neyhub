@@ -3,6 +3,9 @@ import NeyKit
 
 enum StageError: Error, Equatable { case download, manifest, contract(Int), signature }
 
+/// Plugin que o `applyPending` trocou neste início, com as notas guardadas no preparo.
+struct AppliedUpdate: Equatable { let name, version, notes: String }
+
 /// Pastas do NeyHub: `Plugins/<Nome>.neyplugin` (instalados), `Staged/<Nome>.neyplugin` (entram no próximo início),
 /// `Incoming/<uuid>/` (download em andamento), `Remove/<id>` (marcador de desinstalação).
 /// Nomes de pasta vêm do `name` do manifest; o id de uma pasta sempre sai do manifest.json dela.
@@ -13,6 +16,8 @@ final class PluginStore {
     let root: URL
     /// `/releases/latest` do repo; os testes trocam por um file://.
     var latestURL: (String) -> URL = Release.latestURL(repo:)
+    /// Os testes trocam por uma sessão com servidor falso.
+    var session = URLSession.shared
     private let fm = FileManager.default
 
     init(root: URL) { self.root = root }
@@ -55,7 +60,7 @@ final class PluginStore {
 
     /// Última release do repo; nil sem rede ou resposta inesperada.
     func latest(_ repo: String) async -> Release? {
-        guard let (data, _) = try? await URLSession.shared.data(for: Catalog.request(latestURL(repo))) else { return nil }
+        guard let (data, _) = try? await session.data(for: Catalog.request(latestURL(repo))) else { return nil }
         return Release.parse(data)
     }
 
@@ -70,7 +75,28 @@ final class PluginStore {
 
     /// Prepara a versão nova em `Staged/`; incompatível ou mal assinada não é preparada (o erro vai para o card).
     func stageUpdate(_ e: CatalogEntry, release: Release) async throws {
-        _ = try await receive(e, release, into: "Staged")
+        let url = try await receive(e, release, into: "Staged")
+        // Ao lado do plugin para sobreviver ao reinício; o applyPending lê e apaga.
+        try? release.notes.write(to: notesURL(url), atomically: true, encoding: .utf8)
+    }
+
+    private func notesURL(_ bundle: URL) -> URL { bundle.deletingPathExtension().appendingPathExtension("notes.md") }
+
+    /// Ciclo de 6 h: para cada plugin instalado do catálogo, última release → `needsUpdate` → `stageUpdate`, um por vez.
+    /// Falha de um só é logada; marcado para remoção e versão já preparada não baixam de novo.
+    func checkUpdates(_ entries: [CatalogEntry]) async -> (latest: [String: Release], staged: [String: String]) {
+        var latest: [String: Release] = [:], staged: [String: String] = [:]
+        let installed = Dictionary(installedFolders().compactMap(Self.manifest(at:)).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        for e in entries {
+            guard let m = installed[e.id] else { continue }
+            guard let release = await self.latest(e.repo) else { NSLog("NeyHub: sem resposta de \(e.repo)"); continue }
+            latest[e.id] = release
+            let have = stagedVersions()[e.id]
+            guard !isMarkedForRemoval(e.id), needsUpdate(installed: m, latest: release),
+                  have.map({ Release.isNewer(release.version, than: $0) }) ?? true else { continue }
+            do { try await stageUpdate(e, release: release); staged[e.id] = release.version } catch { NSLog("NeyHub: \(e.name) \(release.version) não preparada: \(error)") }
+        }
+        return (latest, staged)
     }
 
     func needsUpdate(installed: PluginManifest, latest: Release) -> Bool { Release.isNewer(latest.version, than: installed.version) }
@@ -83,7 +109,7 @@ final class PluginStore {
 
     /// Chamar ANTES de carregar plugins. Marcados em `Remove/` saem de `Plugins/` e `Staged/`; depois `Staged/*` substitui
     /// `Plugins/*` com `replaceItemAt` (nunca apaga antes de mover): se a troca falha, o antigo continua.
-    func applyPending() {
+    @discardableResult func applyPending() -> [AppliedUpdate] {
         try? fm.removeItem(at: dir("Incoming")) // órfãos de download/lixeira interrompidos; no início nada está baixando
         let removed = removalIDs
         var stuck = Set<String>() // remoção falhou: mantém o marcador, senão o desinstalado volta no próximo início
@@ -102,14 +128,26 @@ final class PluginStore {
         }
         for id in removed.subtracting(stuck) { try? fm.removeItem(at: dir("Remove").appendingPathComponent(id)) }
         try? fm.createDirectory(at: dir("Plugins"), withIntermediateDirectories: true)
+        var applied: [AppliedUpdate] = []
         for staged in bundles(in: "Staged") {
             let dest = dir("Plugins").appendingPathComponent(staged.lastPathComponent)
+            let notes = (try? String(contentsOf: notesURL(staged), encoding: .utf8)) ?? ""
             do {
-                if fm.fileExists(atPath: dest.path) { _ = try fm.replaceItemAt(dest, withItemAt: staged) } else { try fm.moveItem(at: staged, to: dest) }
+                if fm.fileExists(atPath: dest.path) {
+                    _ = try fm.replaceItemAt(dest, withItemAt: staged)
+                    if let m = Self.manifest(at: dest) { applied.append(AppliedUpdate(name: m.name, version: m.version, notes: notes)) }
+                } else { try fm.moveItem(at: staged, to: dest) }
+                try? fm.removeItem(at: notesURL(staged))
             } catch {
                 NSLog("NeyHub: não deu pra aplicar \(staged.lastPathComponent): \(error)")
             }
         }
+        // Notas de quem não está mais em Staged/ (removido, recusado) não ficam para trás.
+        let stillStaged = Set(bundles(in: "Staged").map { notesURL($0).lastPathComponent })
+        for f in (try? fm.contentsOfDirectory(atPath: dir("Staged").path)) ?? [] where f.hasSuffix(".notes.md") && !stillStaged.contains(f) {
+            try? fm.removeItem(at: dir("Staged").appendingPathComponent(f))
+        }
+        return applied
     }
 
     /// Baixa `<Nome>-<v>.neyplugin`, descompacta em `Incoming/<uuid>/`, valida o único `*.neyplugin` e só então move para `into`.
@@ -120,7 +158,7 @@ final class PluginStore {
         let zip = incoming.appendingPathComponent("asset.zip"), out = incoming.appendingPathComponent("out")
         do {
             try fm.createDirectory(at: out, withIntermediateDirectories: true)
-            let (file, response) = try await URLSession.shared.download(for: Catalog.request(asset))
+            let (file, response) = try await session.download(for: Catalog.request(asset))
             guard (response as? HTTPURLResponse).map({ $0.statusCode == 200 }) ?? true else { throw StageError.download }
             try fm.moveItem(at: file, to: zip)
         } catch { throw StageError.download }
