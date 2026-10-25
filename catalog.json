@@ -1,7 +1,7 @@
 [
   {"id": "local.aero", "name": "Aero", "repo": "yagoramires/aero", "summary": "Encaixe de janelas estilo Windows", "hasScreen": false},
   {"id": "local.dose", "name": "Dose", "repo": "yagoramires/dose", "summary": "Remédios e suplementos do dia", "hasScreen": true},
-  {"id": "local.capture", "name": "Capture", "repo": "yagoramires/capture", "summary": "Prints e gravação de tela pela barra de menus", "hasScreen": false, "soon": true},
+  {"id": "local.capture", "name": "Capture", "repo": "yagoramires/capture", "summary": "Prints e gravação de tela pela barra de menus", "hasScreen": false},
   {"id": "local.deck", "name": "Deck", "repo": "yagoramires/deck", "summary": "Controle do fifine AmpliGame D6", "hasScreen": true, "soon": true},
   {"id": "local.pauta", "name": "Pauta", "repo": "yagoramires/pauta", "summary": "Slack, GitHub e Jira num lugar só", "hasScreen": true, "soon": true},
   {"id": "local.hub", "name": "Hub", "repo": "yagoramires/hub", "summary": "Casa conectada: Tuya, SmartThings e Android TV", "hasScreen": true, "soon": true}
