@@ -9,7 +9,10 @@ cd "$(dirname "$0")/.."
 
 NAME="NeyHub"
 PLUGIN_PRODUCT=""
-NEYHUB_PATH="${NEYHUB_PATH:-.}"   # nos apps: ${NEYHUB_PATH:-../neyhub}
+# No próprio neyhub usa o checkout atual; num app, ../neyhub (ou NEYHUB_PATH).
+if [[ -x ./scripts/changelog-section.sh && -f ./Sources/NeyHub/main.swift ]]; then NEYHUB_PATH=.; fi
+NEYHUB_PATH="${NEYHUB_PATH:-../neyhub}"
+[[ -x "$NEYHUB_PATH/scripts/changelog-section.sh" ]] || { echo "✗ neyhub não encontrado em \"$NEYHUB_PATH\" (falta scripts/changelog-section.sh): defina NEYHUB_PATH" >&2; exit 1; }
 
 PUBLISH=0
 for arg in "$@"; do
