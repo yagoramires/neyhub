@@ -58,6 +58,8 @@ if scripts/changelog-section.sh 9.9.9 "$CL" >/dev/null 2>&1; then echo "✗ vers
 # "## [" dentro de bloco de código não fecha a seção.
 printf '## [0.3.0]\n### Notas\n```md\n## [exemplo]\n```\n- c\n\n## [0.2.0]\n- b\n' > "$CL"
 [[ "$(scripts/changelog-section.sh 0.3.0 "$CL")" == $'### Notas\n```md\n## [exemplo]\n```\n- c' ]] || { echo "✗ changelog-section cortou no bloco de código" >&2; exit 1; }
+printf '## [0.3.0]\n~~~\n## [exemplo]\n~~~\n- c\n\n## [0.2.0]\n- b\n' > "$CL"
+[[ "$(scripts/changelog-section.sh 0.3.0 "$CL")" == $'~~~\n## [exemplo]\n~~~\n- c' ]] || { echo "✗ changelog-section cortou no bloco ~~~" >&2; exit 1; }
 NH=build/NeyHub.app/Contents/MacOS/NeyHub
 $NH --validate-manifest Fixtures/HelloPlugin/manifest.json >/dev/null || { echo "✗ manifest bom recusado" >&2; exit 1; }
 sed 's#libHelloPlugin.dylib#../x#' Fixtures/HelloPlugin/manifest.json > "$FIX/bad.json"

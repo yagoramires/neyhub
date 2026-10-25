@@ -36,6 +36,9 @@ Instalador `.dmg` e instalação pelo NeyHub chegam na próxima versão.
 
 <Command Line Tools, scripts/setup-signing.sh (uma vez), scripts/build.sh --run.>
 
+<App que também é plugin do NeyHub: dizer que o avulso chama `HubCheck.leaveForHub` ao abrir. Só nesse caso o
+Info.plist declara `NeyHubAware = true`, que faz o NeyHub não mostrar o alerta dele quando o avulso abre.>
+
 ## Patch notes
 
 Veja o [CHANGELOG](CHANGELOG.md).
