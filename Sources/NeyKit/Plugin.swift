@@ -32,14 +32,17 @@ public struct PluginManifest: Codable, Equatable {
     public let id: String, name: String, version: String, contract: Int, hasScreen: Bool
     public let permissions: [Permission]
     public let binary: String              // só nome de arquivo: sem "/" e sem ".."
+    /// Versão mínima do macOS ("15.0"), opcional. Conferida antes do dlopen: dylib feito para um macOS mais novo não carrega.
+    public let minMacOS: String?
 
-    private enum CodingKeys: String, CodingKey { case id, name, version, contract, hasScreen, permissions, binary }
+    private enum CodingKeys: String, CodingKey { case id, name, version, contract, hasScreen, permissions, binary, minMacOS }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(String.self, forKey: .id); name = try c.decode(String.self, forKey: .name)
         version = try c.decode(String.self, forKey: .version); contract = try c.decode(Int.self, forKey: .contract)
         hasScreen = try c.decode(Bool.self, forKey: .hasScreen); binary = try c.decode(String.self, forKey: .binary)
+        minMacOS = try c.decodeIfPresent(String.self, forKey: .minMacOS)
         // Permissão de um NeyHub mais novo não pode impedir o carregamento: descarta e avisa no log.
         let raw = try c.decode([String].self, forKey: .permissions)
         let known = raw.compactMap(Permission.init(rawValue:))
@@ -48,8 +51,25 @@ public struct PluginManifest: Codable, Equatable {
         permissions = known
     }
 
-    /// id seguro (`PluginSignature.isSafeID`); `name` (vira `<Nome>.neyplugin`) e `binary` são nomes simples, não saem da pasta.
-    public var isValid: Bool { PluginSignature.isSafeID(id) && Self.isPlainName(name) && Self.isPlainName(binary) }
+    /// id seguro (`PluginSignature.isSafeID`); `name` (vira `<Nome>.neyplugin`) e `binary` são nomes simples, não saem da pasta;
+    /// `minMacOS`, quando vem, é uma versão legível.
+    public var isValid: Bool {
+        PluginSignature.isSafeID(id) && Self.isPlainName(name) && Self.isPlainName(binary) && (minMacOS.map { Self.osVersion($0) != nil } ?? true)
+    }
+
+    /// Roda neste macOS: sem `minMacOS`, sempre.
+    public func runs(on os: OperatingSystemVersion = ProcessInfo.processInfo.operatingSystemVersion) -> Bool {
+        guard let min = minMacOS.flatMap(Self.osVersion) else { return true }
+        return (os.majorVersion, os.minorVersion, os.patchVersion) >= (min.majorVersion, min.minorVersion, min.patchVersion)
+    }
+
+    /// "15" / "15.0" / "15.0.1" → versão; qualquer outra coisa → nil.
+    static func osVersion(_ s: String) -> OperatingSystemVersion? {
+        let parts = s.split(separator: ".", omittingEmptySubsequences: false).map { Int($0) }
+        guard (1...3).contains(parts.count), parts.allSatisfy({ ($0 ?? -1) >= 0 }) else { return nil }
+        let n = parts.map { $0! } + [0, 0]
+        return OperatingSystemVersion(majorVersion: n[0], minorVersion: n[1], patchVersion: n[2])
+    }
 
     private static func isPlainName(_ s: String) -> Bool { !s.isEmpty && s != "." && !s.contains("/") && !s.contains("..") }
 }

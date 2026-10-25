@@ -16,6 +16,7 @@ enum SelfTest {
         notifications()
         awake()
         hubPresence()
+        minMacOS()
         lifecycle()
         if let fixture { plugins(fixture); storeInstall(fixture); storeUpdates(fixture) } else { FileHandle.standardError.write(Data("sem --fixture: pulando carga de plugins\n".utf8)) }
     }
@@ -49,6 +50,40 @@ enum SelfTest {
         let menu = c.statusMenu()
         precondition(menu.items.map(\.title) == ["Abrir NeyHub", "", "Mostrar ícone no Dock", "Mostrar ícone na barra de menus", "", "Sair do NeyHub"])
         precondition(menu.items.last?.keyEquivalent == "q")
+    }
+
+    /// `minMacOS` do manifest (o Hub pede 15): num macOS antigo o card diz "Precisa do macOS 15", sem chegar ao dlopen.
+    @MainActor static func minMacOS() {
+        func manifest(_ extra: String) -> PluginManifest? {
+            try? JSONDecoder().decode(PluginManifest.self, from: Data(
+                #"{"id":"local.hub","name":"Hub","version":"0.2.0","contract":1,"hasScreen":true,"permissions":[],"binary":"libHubPlugin.dylib"\#(extra)}"#.utf8))
+        }
+        func os(_ major: Int, _ minor: Int = 0, _ patch: Int = 0) -> OperatingSystemVersion {
+            OperatingSystemVersion(majorVersion: major, minorVersion: minor, patchVersion: patch)
+        }
+        let old = manifest("")!
+        precondition(old.minMacOS == nil && old.isValid && old.runs(on: os(14)), "manifest sem minMacOS continua valendo")
+        let hub = manifest(#","minMacOS":"15.0""#)!
+        precondition(hub.isValid && hub.minMacOS == "15.0" && !hub.runs(on: os(14, 7)) && hub.runs(on: os(15)) && hub.runs(on: os(26)))
+        let patch = manifest(#","minMacOS":"15.1.2""#)!
+        precondition(patch.runs(on: os(15, 1, 2)) && !patch.runs(on: os(15, 1, 1)) && manifest(#","minMacOS":"15""#)!.runs(on: os(15)))
+        for bad in ["abc", "15..0", "", "15.0.0.1", "-1"] { precondition(!manifest(#","minMacOS":"\#(bad)""#)!.isValid, bad) }
+
+        let folder = temp("minos").appendingPathComponent("Hub.neyplugin")
+        try! FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try! Data(#"{"id":"local.hub","name":"Hub","version":"0.2.0","contract":1,"hasScreen":true,"permissions":[],"binary":"libHubPlugin.dylib","minMacOS":"15.0"}"#.utf8)
+            .write(to: folder.appendingPathComponent("manifest.json"))
+        defer { PluginHost.currentOS = ProcessInfo.processInfo.operatingSystemVersion }
+        let dl = PluginHost.dlopenCount
+        PluginHost.currentOS = os(14, 7)
+        precondition(PluginHost.load(folder: folder).failure == .needsMacOS("15.0") && PluginHost.dlopenCount == dl, "macOS antigo chegou ao dlopen")
+        let model = HubModel(store: PluginStore(root: temp("minos-model")))
+        PluginHost.start(folder: folder, model: model)
+        precondition(model.problems["local.hub"] == "Precisa do macOS 15" && model.loaded.isEmpty)
+        precondition(PluginHost.problemText(.needsMacOS("15.4")) == "Precisa do macOS 15.4")
+        // No macOS certo o mesmo manifest segue adiante (e para na assinatura: a pasta não tem dylib).
+        PluginHost.currentOS = os(15)
+        precondition(PluginHost.load(folder: folder).failure == .signature && PluginHost.dlopenCount == dl)
     }
 
     static func awake() {

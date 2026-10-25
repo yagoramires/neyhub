@@ -21,7 +21,7 @@ if let flag = arguments.firstIndex(of: "--validate-manifest") {
     guard let data = FileManager.default.contents(atPath: path), let m = try? JSONDecoder().decode(PluginManifest.self, from: data) else {
         fail("manifest ilegível ou incompleto: \(path)")
     }
-    if !m.isValid { fail("manifest inválido (id, name ou binary)") }
+    if !m.isValid { fail("manifest inválido (id, name, binary ou minMacOS)") }
     if m.contract != neyPluginContractVersion { fail("contract \(m.contract) != \(neyPluginContractVersion)") }
     print("ok \(m.id) \(m.version)")
     exit(0)

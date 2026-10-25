@@ -1,7 +1,7 @@
 import AppKit
 import NeyKit
 
-enum LoadError: Error, Equatable { case manifest, signature, contractTooNew(Int), contractTooOld(Int), symbol, notAPlugin, alreadyLoaded }
+enum LoadError: Error, Equatable { case manifest, signature, contractTooNew(Int), contractTooOld(Int), needsMacOS(String), symbol, notAPlugin, alreadyLoaded }
 
 struct LoadedPlugin { let manifest: PluginManifest; let plugin: NeyPlugin; let folder: URL }
 
@@ -28,6 +28,8 @@ enum PluginHost {
               let manifest = try? JSONDecoder().decode(PluginManifest.self, from: data), manifest.isValid
         else { return .failure(.manifest) }
         if let e = contractError(manifest.contract) { return .failure(e) }
+        // Antes do dlopen: num macOS antigo ele falharia e o card diria só "Não deu pra carregar".
+        if !manifest.runs(on: currentOS), let min = manifest.minMacOS { return .failure(.needsMacOS(min)) }
         let binary = folder.appendingPathComponent(manifest.binary)
         guard PluginSignature.isTrustedPlugin(binary) else { return .failure(.signature) }
         guard !loadedIDs.contains(manifest.id) else { return .failure(.alreadyLoaded) }
@@ -53,6 +55,9 @@ enum PluginHost {
         return .success(LoadedPlugin(manifest: manifest, plugin: plugin, folder: folder))
     }
 
+    /// O selftest troca para simular um macOS antigo.
+    static var currentOS = ProcessInfo.processInfo.operatingSystemVersion
+
     private static func contractError(_ v: Int) -> LoadError? {
         v > neyPluginContractVersion ? .contractTooNew(v) : v < neyPluginContractVersion ? .contractTooOld(v) : nil
     }
@@ -63,6 +68,7 @@ enum PluginHost {
         case .contractTooNew: "Precisa atualizar o NeyHub"
         case .contractTooOld: "Precisa atualizar o app"
         case .alreadyLoaded: "Reinicie o NeyHub para reinstalar"
+        case .needsMacOS(let v): "Precisa do macOS \(v.hasSuffix(".0") ? String(v.dropLast(2)) : v)"
         default: "Não deu pra carregar"
         }
     }
