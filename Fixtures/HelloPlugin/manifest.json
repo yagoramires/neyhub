@@ -1,0 +1,1 @@
+{"id": "local.hello", "name": "Hello", "version": "1.0.0", "contract": 1, "hasScreen": true, "permissions": [], "binary": "libHelloPlugin.dylib"}
