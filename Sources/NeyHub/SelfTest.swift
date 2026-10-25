@@ -168,6 +168,16 @@ enum SelfTest {
         let screen = model.screen(for: p)
         precondition(screen != nil && model.screen(for: p) === screen, "tela recriada")
 
+        // Plugin pede a própria tela (NeyHost.showScreen): com tela vai para ela; sem tela, para o card na Loja.
+        var asked: [String] = []
+        host.onShowScreen = { asked.append($0); model.showScreen($0) }
+        model.route = .permissions
+        (host as NeyHost).showScreen?(id: "local.hello")
+        precondition(asked == ["local.hello"] && model.route == .app("local.hello"), "showScreen não levou à tela")
+        noScreen.route = .permissions
+        noScreen.showScreen(m.id)
+        precondition(noScreen.route == .store && noScreen.detail == m.id, "sem tela devia abrir o card")
+
         model.route = .app("local.hello")
         PluginHost.uninstall(p, store: store, model: model)
         precondition(count("stopCount") == 1)

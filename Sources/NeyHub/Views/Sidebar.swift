@@ -29,6 +29,11 @@ final class HubModel: ObservableObject {
     /// Carregados com a tela ligada: só esses aparecem em "Instalados".
     var sidebarApps: [LoadedPlugin] { loaded.filter { presences[$0.manifest.id]?.screen == true } }
 
+    /// Pedido do plugin (`NeyHost.showScreen`): a tela dele se o modo tem tela, senão o card na Loja.
+    func showScreen(_ id: String) {
+        if presences[id]?.screen == true { route = .app(id) } else { route = .store; detail = id }
+    }
+
     func screen(for p: LoadedPlugin) -> NSViewController? {
         if let vc = screens[p.manifest.id] { return vc }
         let vc = p.plugin.makeScreen()

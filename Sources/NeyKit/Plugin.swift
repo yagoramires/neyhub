@@ -8,6 +8,9 @@ public let neyPluginContractVersion = 1
 @objc public protocol NeyHost: NSObjectProtocol {
     func openPermissions()                 // leva o NeyHub para a tela de Permissões
     func log(_ message: String)
+    /// Mostra a tela do app `id` na janela do NeyHub (ou o card dele na Loja, se o modo não tem tela).
+    /// Opcional: o contrato continua v1; o plugin confere com `responds(to:)` antes de contar com ele.
+    @objc optional func showScreen(id: String)
 }
 
 /// Objeto devolvido pelo símbolo `neyhub_plugin_v1` do dylib. A classe mora no módulo do plugin.

@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         notifications.install()
         host.onOpenPermissions = { [self] in model.route = .permissions; showWindow() }
+        host.onShowScreen = { [self] id in model.showScreen(id); showWindow() }
         offerLoginItem()
         model.store.applyPending() // antes de qualquer plugin ser carregado
         model.openStore()          // catálogo do cache/embutido já; rede em segundo plano
@@ -46,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window = w
         NSApp.setActivationPolicy(.regular)
         model.awake.refresh()
+        if w.isMiniaturized { w.deminiaturize(nil) }
         w.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

@@ -10,6 +10,11 @@ final class HostBridge: NSObject, NeyHost {
 
     func openPermissions() { onOpenPermissions?() }
 
+    /// O AppDelegate liga: leva à tela do app e traz a janela.
+    var onShowScreen: ((String) -> Void)?
+
+    func showScreen(id: String) { onShowScreen?(id) }
+
     func log(_ message: String) {
         messages.append(message)
         print("[plugin] \(message)")
