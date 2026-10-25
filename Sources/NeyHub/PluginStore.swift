@@ -76,10 +76,21 @@ final class PluginStore {
     /// `Plugins/*` com `replaceItemAt` (nunca apaga antes de mover): se a troca falha, o antigo continua.
     func applyPending() {
         let removed = removalIDs
-        for folder in bundles(in: "Plugins") + bundles(in: "Staged") where Self.manifest(at: folder).map({ removed.contains($0.id) }) ?? false {
-            try? fm.removeItem(at: folder)
+        var stuck = Set<String>() // remoção falhou: mantém o marcador, senão o desinstalado volta no próximo início
+        for folder in bundles(in: "Plugins") + bundles(in: "Staged") {
+            guard let id = Self.manifest(at: folder)?.id, removed.contains(id) else { continue }
+            // Move para fora (atômico) antes de apagar: falha no meio não deixa uma pasta pela metade em Plugins/.
+            let trash = dir("Incoming").appendingPathComponent(UUID().uuidString)
+            do {
+                try fm.createDirectory(at: dir("Incoming"), withIntermediateDirectories: true)
+                try fm.moveItem(at: folder, to: trash)
+                try? fm.removeItem(at: trash)
+            } catch {
+                stuck.insert(id)
+                NSLog("NeyHub: não deu pra remover \(folder.lastPathComponent): \(error)")
+            }
         }
-        for id in removed { try? fm.removeItem(at: dir("Remove").appendingPathComponent(id)) }
+        for id in removed.subtracting(stuck) { try? fm.removeItem(at: dir("Remove").appendingPathComponent(id)) }
         try? fm.createDirectory(at: dir("Plugins"), withIntermediateDirectories: true)
         for staged in bundles(in: "Staged") {
             let dest = dir("Plugins").appendingPathComponent(staged.lastPathComponent)
@@ -113,7 +124,8 @@ final class PluginStore {
         guard ditto.terminationStatus == 0, found.count == 1,
               (try? found[0].resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == false else { throw StageError.manifest }
         let manifest = try validate(folder: found[0]).get()
-        guard manifest.id == e.id else { throw StageError.manifest }
+        // Só o binário é assinado: id, nome (vira a pasta) e versão do manifest têm de bater com catálogo e release.
+        guard manifest.id == e.id, manifest.name == e.name, manifest.version == release.version else { throw StageError.manifest }
 
         let name = "\(manifest.name).neyplugin"
         // Plugins/ ocupado = ainda carregado nesta sessão: não troca por baixo, prepara para o próximo início.

@@ -182,6 +182,11 @@ extension SelfTest {
         precondition(waitError { try await store.stageUpdate(hello, release: release("1.0.2", future)) } == .contract(2))
         precondition(waitError { try await store.stageUpdate(hello, release: release("1.0.3", nil)) } == .download)
         precondition(waitError { try await store.stageUpdate(hello, release: release("1.0.4", assets.appendingPathComponent("sumiu"))) } == .download)
+        // Manifest com nome ou versão diferentes do catálogo/release: recusa (o nome vira a pasta de destino).
+        let renamed = CatalogEntry(id: "local.hello", name: "Dose", repo: "x/hello", summary: "", hasScreen: true)
+        let asDose = Release(version: "1.0.0", notes: "", page: URL(string: "https://e")!, assets: ["Dose-1.0.0.neyplugin": good])
+        precondition(waitError { try await store.stageUpdate(renamed, release: asDose) } == .manifest)
+        precondition(waitError { try await store.stageUpdate(hello, release: release("1.0.5", good)) } == .manifest)
         precondition(!fm.fileExists(atPath: staged.path) && incomingEmpty(), "preparo recusado deixou resto")
         try! waitThrowing { try await store.stageUpdate(hello, release: release("1.0.0", good)) }
         precondition(store.validate(folder: staged).failure == nil && incomingEmpty())
@@ -193,6 +198,17 @@ extension SelfTest {
         precondition(store.installedFolders().isEmpty)
         precondition(p(try! waitThrowing { try await store.install(hello) }) == p(staged))
         precondition(store.installedFolders().map(p) == [p(url)])
+
+        // Remoção que falha mantém o marcador: o desinstalado não volta no próximo início.
+        store.applyPending()
+        store.markForRemoval(id: "local.hello")
+        let plugins = root.appendingPathComponent("Plugins"), marker = root.appendingPathComponent("Remove/local.hello")
+        try! fm.setAttributes([.posixPermissions: 0o555], ofItemAtPath: plugins.path)
+        store.applyPending()
+        try! fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: plugins.path)
+        precondition(fm.fileExists(atPath: marker.path) && store.installedFolders().isEmpty)
+        store.applyPending()
+        precondition(!fm.fileExists(atPath: marker.path) && !fm.fileExists(atPath: url.path))
     }
 
     /// O selftest roda síncrono na main; as chamadas async rodam fora dela.
