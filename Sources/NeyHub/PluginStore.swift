@@ -36,6 +36,13 @@ final class PluginStore {
         return bundles(in: "Plugins").filter { Self.manifest(at: $0).map { !removed.contains($0.id) } ?? true }
     }
 
+    /// id → versão em `Staged/`, menos os marcados para remoção.
+    func stagedVersions() -> [String: String] {
+        let removed = removalIDs
+        let ms = bundles(in: "Staged").compactMap(Self.manifest(at:)).filter { !removed.contains($0.id) }
+        return Dictionary(ms.map { ($0.id, $0.version) }, uniquingKeysWith: { a, _ in a })
+    }
+
     /// Manifest válido, contrato igual ao nosso e binário com a assinatura fixa.
     func validate(folder: URL) -> Result<PluginManifest, StageError> {
         guard let m = Self.manifest(at: folder), m.isValid else { return .failure(.manifest) }
@@ -75,6 +82,7 @@ final class PluginStore {
     /// Chamar ANTES de carregar plugins. Marcados em `Remove/` saem de `Plugins/` e `Staged/`; depois `Staged/*` substitui
     /// `Plugins/*` com `replaceItemAt` (nunca apaga antes de mover): se a troca falha, o antigo continua.
     func applyPending() {
+        try? fm.removeItem(at: dir("Incoming")) // órfãos de download/lixeira interrompidos; no início nada está baixando
         let removed = removalIDs
         var stuck = Set<String>() // remoção falhou: mantém o marcador, senão o desinstalado volta no próximo início
         for folder in bundles(in: "Plugins") + bundles(in: "Staged") {
@@ -117,6 +125,7 @@ final class PluginStore {
 
         let ditto = Process()
         ditto.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+        // Zip-slip: o `ditto -x -k` tira os ".." dos caminhos e grava symlinks como arquivos comuns (conferido).
         ditto.arguments = ["-x", "-k", zip.path, out.path]
         do { try ditto.run() } catch { throw StageError.download }
         ditto.waitUntilExit()

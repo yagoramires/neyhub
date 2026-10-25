@@ -43,7 +43,7 @@ struct AppDetailView: View {
 
                 if model.installed[entry.id] != nil {
                     GSectionLabel("Modo")
-                    mode
+                    PresencePicker(model: model, id: entry.id, name: entry.name, hasScreen: entry.hasScreen)
                 }
                 if let plugin {
                     GSectionLabel("Configurações")
@@ -58,34 +58,10 @@ struct AppDetailView: View {
         .task { if notes == nil { notes = await Catalog.releases(repo: entry.repo) } }
     }
 
-    /// "Tela · Barra de menus · Os dois"; sem tela, só mostrar/esconder na barra.
-    @ViewBuilder private var mode: some View {
-        let p = model.presence(entry.id, hasScreen: entry.hasScreen)
-        if entry.hasScreen {
-            HStack(spacing: 6) {
-                choice("Tela", Presence(screen: true, menuBar: false), current: p)
-                choice("Barra de menus", Presence(screen: false, menuBar: true), current: p)
-                choice("Os dois", Presence(screen: true, menuBar: true), current: p)
-            }
-        } else {
-            HStack {
-                Text("Mostrar na barra de menus").font(.system(size: 12))
-                Spacer()
-                GSwitch(isOn: Binding(get: { p.menuBar }, set: { model.setPresence(Presence(screen: false, menuBar: $0), id: entry.id, hasScreen: false) }),
-                        label: "Mostrar \(entry.name) na barra de menus")
-            }
-        }
-    }
-
-    private func choice(_ title: String, _ value: Presence, current: Presence) -> some View {
-        GPill(title: title, style: value == current ? .primary : .ghost) { model.setPresence(value, id: entry.id, hasScreen: true) }
-            .accessibilityLabel("Modo \(title)")
-            .accessibilityAddTraits(value == current ? .isSelected : [])
-    }
-
     @ViewBuilder private var releaseNotes: some View {
         if let notes, !notes.isEmpty {
-            ForEach(notes, id: \.version) { r in
+            // Por posição: duas releases podem ter a mesma versão (tag repetida com prefixo diferente).
+            ForEach(Array(notes.enumerated()), id: \.offset) { _, r in
                 VStack(alignment: .leading, spacing: 3) {
                     Text("v\(r.version)").font(.system(size: 12, weight: .semibold)).foregroundStyle(Grafite.strong)
                     ForEach(Array(r.notes.split(separator: "\n").enumerated()), id: \.offset) { _, line in Self.noteLine(String(line)) }
@@ -110,7 +86,37 @@ struct AppDetailView: View {
     }
 }
 
-/// Embute um NSViewController do plugin (configurações; a Task 9 usa para a tela).
+/// "Tela · Barra de menus · Os dois"; sem tela, só mostrar/esconder na barra. No detalhe da Loja e no topo da tela do app.
+struct PresencePicker: View {
+    @ObservedObject var model: HubModel
+    let id: String, name: String, hasScreen: Bool
+
+    var body: some View {
+        let p = model.presence(id, hasScreen: hasScreen)
+        if hasScreen {
+            HStack(spacing: 6) {
+                choice("Tela", Presence(screen: true, menuBar: false), current: p)
+                choice("Barra de menus", Presence(screen: false, menuBar: true), current: p)
+                choice("Os dois", Presence(screen: true, menuBar: true), current: p)
+            }
+        } else {
+            HStack {
+                Text("Mostrar na barra de menus").font(.system(size: 12))
+                Spacer()
+                GSwitch(isOn: Binding(get: { p.menuBar }, set: { model.setPresence(Presence(screen: false, menuBar: $0), id: id, hasScreen: false) }),
+                        label: "Mostrar \(name) na barra de menus")
+            }
+        }
+    }
+
+    private func choice(_ title: String, _ value: Presence, current: Presence) -> some View {
+        GPill(title: title, style: value == current ? .primary : .ghost) { model.setPresence(value, id: id, hasScreen: true) }
+            .accessibilityLabel("Modo \(title)")
+            .accessibilityAddTraits(value == current ? .isSelected : [])
+    }
+}
+
+/// Embute um NSViewController do plugin (configurações e tela).
 struct PluginViewHost: NSViewControllerRepresentable {
     let make: () -> NSViewController
     func makeNSViewController(context: Context) -> NSViewController { make() }

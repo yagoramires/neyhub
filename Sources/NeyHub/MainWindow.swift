@@ -20,3 +20,29 @@ enum MainWindow {
         return window
     }
 }
+
+/// Tela de um plugin dentro da janela: nome e modo no topo, a tela do plugin embaixo.
+struct AppScreen: View {
+    @ObservedObject var model: HubModel
+    let plugin: LoadedPlugin
+
+    var body: some View {
+        let m = plugin.manifest
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                AppIcon(name: m.name, id: m.id, size: 26)
+                Text(m.name).font(.system(size: 16, weight: .semibold)).foregroundStyle(Grafite.strong)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                PresencePicker(model: model, id: m.id, name: m.name, hasScreen: m.hasScreen)
+            }
+            if let screen = model.screen(for: plugin) {
+                PluginViewHost(make: { screen }).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else {
+                Text("Este app não tem tela.").font(.system(size: 11)).foregroundStyle(Grafite.muted)
+            }
+        }
+        .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 38)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}

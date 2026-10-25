@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import NeyKit
 import SwiftUI
@@ -8,6 +9,9 @@ final class HubModel: ObservableObject {
     @Published var route: Route = .store
     @Published var loaded: [LoadedPlugin] = []
     @Published var problems: [String: String] = [:]
+    @Published var presences: [String: Presence] = [:]   // id → presença aplicada (PluginHost.apply)
+    /// Tela de cada plugin, criada uma vez: trocar de item na sidebar não recria.
+    var screens: [String: NSViewController] = [:]
 
     // Loja (StoreView.swift)
     let store: PluginStore
@@ -19,6 +23,16 @@ final class HubModel: ObservableObject {
     @Published var detail: String?                           // id aberto no detalhe da Loja
 
     init(store: PluginStore = PluginStore(root: PluginStore.defaultRoot)) { self.store = store }
+
+    /// Carregados com a tela ligada: só esses aparecem em "Instalados".
+    var sidebarApps: [LoadedPlugin] { loaded.filter { presences[$0.manifest.id]?.screen == true } }
+
+    func screen(for p: LoadedPlugin) -> NSViewController? {
+        if let vc = screens[p.manifest.id] { return vc }
+        let vc = p.plugin.makeScreen()
+        screens[p.manifest.id] = vc
+        return vc
+    }
 }
 
 struct Sidebar: View {
@@ -34,7 +48,7 @@ struct Sidebar: View {
             item(.store, title: "Loja") { symbol("bag") }
             item(.permissions, title: "Permissões") { symbol("lock.shield") }
             GSectionLabel("Instalados").padding(.horizontal, 6).padding(.top, 10).padding(.bottom, 4)
-            ForEach(model.loaded, id: \.manifest.id) { plugin in
+            ForEach(model.sidebarApps, id: \.manifest.id) { plugin in
                 item(.app(plugin.manifest.id), title: plugin.manifest.name) {
                     AppIcon(name: plugin.manifest.name, id: plugin.manifest.id, size: 18)
                 }
@@ -91,12 +105,11 @@ struct RootView: View {
     var body: some View {
         HStack(spacing: 0) {
             Sidebar(model: model)
-            if model.route == .store {
-                StoreView(model: model)
-                    .padding(.horizontal, 16).padding(.top, 38)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            } else {
-                placeholder
+            switch model.route {
+            case .permissions: placeholder
+            case .app(let id):
+                if let p = model.loaded.first(where: { $0.manifest.id == id }) { AppScreen(model: model, plugin: p).id(id) } else { store }
+            case .store: store
             }
         }
         .foregroundStyle(Grafite.text)
@@ -105,27 +118,20 @@ struct RootView: View {
         .environment(\.colorScheme, .dark)
     }
 
+    private var store: some View {
+        StoreView(model: model)
+            .padding(.horizontal, 16).padding(.top, 38)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    // Task 10 troca pela tela de Permissões.
     private var placeholder: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.system(size: 16, weight: .semibold)).foregroundStyle(Grafite.strong)
-            Text(subtitle).font(.system(size: 11)).foregroundStyle(Grafite.muted)
+            Text("Permissões").font(.system(size: 16, weight: .semibold)).foregroundStyle(Grafite.strong)
+            Text("O que cada plugin pode acessar.").font(.system(size: 11)).foregroundStyle(Grafite.muted)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 38)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private var title: String {
-        switch model.route {
-        case .store, .permissions: "Permissões"
-        case .app(let id): model.loaded.first { $0.manifest.id == id }?.manifest.name ?? id
-        }
-    }
-
-    private var subtitle: String {
-        switch model.route {
-        case .store, .permissions: "O que cada plugin pode acessar."
-        case .app: "Em breve."
-        }
     }
 }

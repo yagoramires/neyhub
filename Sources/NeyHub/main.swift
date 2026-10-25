@@ -5,7 +5,8 @@ let arguments = CommandLine.arguments
 
 if arguments.contains("--selftest") {
     let flag = arguments.firstIndex(of: "--fixture")
-    SelfTest.run(fixture: flag.flatMap { arguments.indices.contains($0 + 1) ? URL(fileURLWithPath: arguments[$0 + 1]) : nil })
+    let fixture = flag.flatMap { arguments.indices.contains($0 + 1) ? URL(fileURLWithPath: arguments[$0 + 1]) : nil }
+    MainActor.assumeIsolated { SelfTest.run(fixture: fixture) }
     print("selftest ok")
     exit(0)
 }

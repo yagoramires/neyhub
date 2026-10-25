@@ -4,7 +4,7 @@ import NeyKitApp
 
 /// `NeyHub --selftest [--fixture <pasta>]` roda tudo e imprime "selftest ok". Precisa rodar de dentro do .app.
 enum SelfTest {
-    static func run(fixture: URL?) {
+    @MainActor static func run(fixture: URL?) {
         precondition(Bundle.main.bundleIdentifier == "local.neyhub", "selftest fora do .app")
         NeyKitSelfTest.run()
         NeyKitAppSelfTest.run()
@@ -21,7 +21,7 @@ enum SelfTest {
     }
 
     /// Pastas montadas pelo scripts/selftest.sh: good (assinada), adhoc, tampered, future (contract 2).
-    static func plugins(_ dir: URL) {
+    @MainActor static func plugins(_ dir: URL) {
         func folder(_ name: String) -> URL { dir.appendingPathComponent("\(name)/Hello.neyplugin") }
         let good = folder("good")
         guard case .success(let p) = PluginHost.load(folder: good) else { preconditionFailure("good: \(PluginHost.load(folder: good))") }
@@ -40,6 +40,51 @@ enum SelfTest {
         precondition(host.messages == ["Olá do plugin"])
         p.plugin.stop()
         precondition((p.plugin as AnyObject).value(forKey: "stopCount") as? Int == 1)
+
+        // Mesmo arquivo (hardlink) sob outro id: recusado antes do dlopen, senão o entry rodaria de novo.
+        let fm = FileManager.default
+        let other = temp("link").appendingPathComponent("Outro.neyplugin")
+        try! fm.createDirectory(at: other, withIntermediateDirectories: true)
+        try! Data(#"{"id":"local.outro","name":"Outro","version":"1.0.0","contract":1,"hasScreen":true,"permissions":[],"binary":"libHelloPlugin.dylib"}"#.utf8)
+            .write(to: other.appendingPathComponent("manifest.json"))
+        try! fm.linkItem(at: good.appendingPathComponent("libHelloPlugin.dylib"), to: other.appendingPathComponent("libHelloPlugin.dylib"))
+        precondition(PluginHost.load(folder: other).failure == .alreadyLoaded && PluginHost.dlopenCount == 1)
+
+        hosting(p)
+    }
+
+    /// Presença, tela embutida e desinstalar com o plugin `good` já carregado.
+    @MainActor static func hosting(_ p: LoadedPlugin) {
+        let fm = FileManager.default
+        precondition(PluginHost.problemText(.contractTooNew(2)) == "Precisa atualizar o NeyHub")
+        precondition(PluginHost.problemText(.signature) == "Assinatura não confere — reinstale pela Loja")
+        precondition(PluginHost.problemText(.contractTooOld(0)) == "Precisa atualizar o app")
+        precondition(PluginHost.problemText(.alreadyLoaded) == "Reinicie o NeyHub para reinstalar")
+        precondition(PluginHost.problemText(.symbol) == "Não deu pra carregar")
+        precondition(PluginHost.conflict(id: "local.inexistente") == nil)
+
+        let root = temp("host")
+        defer { try? fm.removeItem(at: root) }
+        let store = PluginStore(root: root)
+        let model = HubModel(store: store)
+        model.loaded = [p]
+        func count(_ key: String) -> Int? { (p.plugin as AnyObject).value(forKey: key) as? Int }
+
+        PluginHost.apply(.init(screen: false, menuBar: true), to: p, model: model)
+        precondition(model.sidebarApps.isEmpty, "só barra de menus não vai para a sidebar")
+        precondition(count("menuBarCalls") == 1)
+        PluginHost.apply(.init(screen: true, menuBar: true), to: p, model: model)
+        precondition(model.sidebarApps.map(\.manifest.id) == ["local.hello"])
+        let screen = model.screen(for: p)
+        precondition(screen != nil && model.screen(for: p) === screen, "tela recriada")
+
+        model.route = .app("local.hello")
+        PluginHost.uninstall(p, store: store, model: model)
+        precondition(count("stopCount") == 2)
+        precondition(fm.fileExists(atPath: root.appendingPathComponent("Remove/local.hello").path))
+        precondition(model.loaded.isEmpty && model.sidebarApps.isEmpty && model.route == .store)
+        let active = try? JSONDecoder().decode([String].self, from: Data(contentsOf: root.appendingPathComponent("active.json")))
+        precondition(active == [], "active.json não tirou o desinstalado")
     }
 }
 
@@ -118,6 +163,18 @@ extension SelfTest {
         precondition(version(plugins.appendingPathComponent("Novo.neyplugin")) == "0.5.0")
         precondition(!fm.fileExists(atPath: plugins.appendingPathComponent("Dose.neyplugin").path))
         precondition(try! fm.contentsOfDirectory(atPath: staged.path).isEmpty)
+
+        // Staged/ que sobrou (applyPending falhou) volta como "pronta para reiniciar"; marcado para remoção não.
+        writeManifest(staged.appendingPathComponent("Capture.neyplugin"), id: "local.capture", name: "Capture", version: "0.6.0")
+        writeManifest(staged.appendingPathComponent("Novo.neyplugin"), id: "local.novo", name: "Novo")
+        store.markForRemoval(id: "local.novo")
+        precondition(store.stagedVersions() == ["local.capture": "0.6.0"])
+        // Órfãos de Incoming/ (download ou lixeira interrompidos) somem no início.
+        let orphan = root.appendingPathComponent("Incoming/\(UUID().uuidString)")
+        try! fm.createDirectory(at: orphan, withIntermediateDirectories: true)
+        store.applyPending()
+        precondition(!fm.fileExists(atPath: orphan.path), "órfão de Incoming/ ficou")
+        precondition(version(plugins.appendingPathComponent("Capture.neyplugin")) == "0.6.0" && store.stagedVersions().isEmpty)
 
         // validate: contract incompatível e manifest ruim.
         let c2 = root.appendingPathComponent("c2/Aero.neyplugin")

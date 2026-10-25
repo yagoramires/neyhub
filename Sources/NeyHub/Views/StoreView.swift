@@ -12,6 +12,7 @@ extension HubModel {
         let bundled = Bundle.main.url(forResource: "catalog", withExtension: "json") ?? Self.catalogCache
         catalog = Catalog.load(cache: Self.catalogCache, bundled: bundled)
         reloadInstalled()
+        staged = store.stagedVersions() // applyPending que falhou deixa Staged/: o aviso de reiniciar volta
         Task.detached { [self] in
             if let fresh = await Catalog.refresh(cache: Self.catalogCache) { await MainActor.run { self.catalog = fresh } }
             for e in await MainActor.run(body: { self.catalog }) {
@@ -69,11 +70,9 @@ extension HubModel {
         }
     }
 
-    // shortcut: Task 9 troca por PluginHost.uninstall (mesmos passos: stop, markForRemoval, tirar da sidebar).
-    func uninstall(_ id: String) {
-        if let p = loaded.first(where: { $0.manifest.id == id }) { p.plugin.stop() }
-        loaded.removeAll { $0.manifest.id == id }
-        store.markForRemoval(id: id)
+    /// Pausado ou que não carregou não está em `loaded`: só marca.
+    @MainActor func uninstall(_ id: String) {
+        if let p = loaded.first(where: { $0.manifest.id == id }) { PluginHost.uninstall(p, store: store, model: self) } else { store.markForRemoval(id: id) }
         staged[id] = nil
         detail = nil
         reloadInstalled()
@@ -83,10 +82,10 @@ extension HubModel {
         Presence.load(AppDefaults.forApp(id), hasScreen: hasScreen).normalized(hasScreen: hasScreen)
     }
 
-    func setPresence(_ p: Presence, id: String, hasScreen: Bool) {
+    @MainActor func setPresence(_ p: Presence, id: String, hasScreen: Bool) {
         let p = p.normalized(hasScreen: hasScreen)
         p.save(AppDefaults.forApp(id))
-        loaded.first { $0.manifest.id == id }?.plugin.setMenuBarVisible(p.menuBar)
+        if let plugin = loaded.first(where: { $0.manifest.id == id }) { PluginHost.apply(p, to: plugin, model: self) }
         objectWillChange.send()
     }
 

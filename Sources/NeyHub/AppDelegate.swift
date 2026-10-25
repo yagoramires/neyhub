@@ -3,6 +3,7 @@ import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let model = HubModel()
+    private let host = HostBridge()
     private var window: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -10,6 +11,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         model.store.applyPending() // antes de qualquer plugin ser carregado
         model.openStore()          // catálogo do cache/embutido já; rede em segundo plano
         showWindow()
+        PluginHost.startAll(model, store: model.store, host: host)
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        try? FileManager.default.removeItem(at: PluginHost.activeURL(model.store)) // ausente já é o estado certo
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
