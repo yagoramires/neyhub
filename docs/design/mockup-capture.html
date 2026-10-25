@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Capture · mockup</title>
+<style>
+:root{--bg:#121315;--card:#1a1b1f;--line:#26282e;--txt:#d6d8dd;--muted:#8a8d96;--acc:#c6ff3d;--red:#ff4d4d}
+*{box-sizing:border-box}body{margin:0;background:#0b0c0d;color:var(--txt);font:12px -apple-system,"SF Pro Text",Inter,sans-serif;padding:32px;display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start}
+h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.pop{width:300px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 20px 60px #000a}
+.head{display:flex;align-items:center;gap:8px;margin-bottom:6px}.head b{font-size:13px;color:#fff}.head .v{color:var(--muted);font-size:10px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--acc);margin-left:auto}
+.lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:12px 2px 6px;display:flex}.lbl em{margin-left:auto;font-style:normal;letter-spacing:0;text-transform:none;color:#5d6068}
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.row.three{grid-template-columns:repeat(3,1fr)}.row.two{grid-template-columns:1fr 1fr}
+.t{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 4px 6px;text-align:center;cursor:pointer}
+.t:hover{border-color:var(--acc)}.t i{display:block;font-style:normal;font-size:15px;margin-bottom:3px;color:#fff}
+.t span{font-size:9.5px;color:var(--txt)}.t kbd{display:block;font:9px ui-monospace,monospace;color:var(--acc);margin-top:3px}
+.t.rec i{color:var(--red)}
+.hint{font-size:10px;color:var(--muted);margin:6px 2px 0}
+.line{display:flex;align-items:center;gap:8px;padding:7px 2px;border-top:1px solid var(--line)}.line:first-of-type{border-top:0}
+.line kbd{margin-left:auto;font:10px ui-monospace,monospace;color:var(--acc)}
+.seg{margin-left:auto;display:flex;background:var(--card);border:1px solid var(--line);border-radius:7px;padding:2px}.seg span{padding:2px 8px;border-radius:5px;color:var(--muted);font-size:10px}.seg .on{background:#2a2d33;color:#fff}
+.sw{margin-left:auto;width:26px;height:15px;border-radius:8px;background:var(--acc);position:relative}.sw:after{content:"";position:absolute;right:2px;top:2px;width:11px;height:11px;border-radius:50%;background:#111}
+.sw.off{background:#33363d}.sw.off:after{left:2px;right:auto;background:#8a8d96}
+.chips{display:flex;gap:6px}.chip{flex:1;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:10.5px}.chip small{display:block;color:var(--muted);font-size:9.5px;margin-top:1px}
+.foot{display:flex;gap:6px;margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.g{font-size:10px;color:var(--muted);padding:4px 8px;border-radius:6px;background:var(--card)}.g.r{margin-left:auto}
+.recbar{display:flex;align-items:center;gap:10px;background:#2a1414;border:1px solid #5a2222;border-radius:10px;padding:10px}
+.recbar b{color:#fff;font:600 18px ui-monospace,monospace}.recbar .stop{margin-left:auto;background:var(--red);color:#fff;font-weight:700;border-radius:20px;padding:5px 12px;font-size:11px}
+.pill{display:inline-flex;align-items:center;gap:5px;background:var(--red);color:#fff;border-radius:6px;padding:2px 8px;font:600 11px ui-monospace,monospace}
+.note{color:var(--muted);font-size:11px;max-width:300px;line-height:1.5}
+</style></head><body>
+
+<div>
+<h2>1 · Popover — clique no ícone</h2>
+<div class="pop">
+  <div class="head"><b>Capture</b><span class="v">0.3.0</span><span class="dot"></span></div>
+
+  <div class="lbl">Print<em>salva um arquivo</em></div>
+  <div class="row">
+    <div class="t"><i>▭</i><span>Tela inteira</span><kbd>⇧⌘3</kbd></div>
+    <div class="t"><i>⬚</i><span>Parte</span><kbd>⇧⌘4</kbd></div>
+    <div class="t"><i>❐</i><span>Janela</span><kbd>⇧⌘4 ␣</kbd></div>
+    <div class="t"><i>❑</i><span>Sem sombra</span><kbd>⇧⌘4 ␣ ⌥</kbd></div>
+  </div>
+
+  <div class="lbl">Copiar<em>vai pra área de transferência</em></div>
+  <div class="row three">
+    <div class="t"><i>▭</i><span>Tela inteira</span><kbd>⌃⇧⌘3</kbd></div>
+    <div class="t"><i>⬚</i><span>Parte</span><kbd>⌃⇧⌘4</kbd></div>
+    <div class="t"><i>❐</i><span>Janela</span><kbd>⌃⇧⌘4 ␣</kbd></div>
+  </div>
+
+  <div class="lbl">Gravar vídeo<em>pra parar: ⌃⌘Esc</em></div>
+  <div class="row two">
+    <div class="t rec"><i>●</i><span>Tela inteira</span><kbd>⇧⌘5</kbd></div>
+    <div class="t rec"><i>◉</i><span>Parte selecionada</span><kbd>⇧⌘5</kbd></div>
+  </div>
+
+  <div class="lbl">Opções<em>as mesmas do ⇧⌘5</em></div>
+  <div class="line">Timer<div class="seg"><span class="on">Nenhum</span><span>5 s</span><span>10 s</span></div></div>
+  <div class="line">Mostrar o ponteiro<span class="sw"></span></div>
+  <div class="line">Mostrar cliques<span class="sw off"></span></div>
+  <div class="line">Gravar o microfone<span class="sw off"></span></div>
+  <div class="line">Abrir depois de capturar<span class="sw"></span></div>
+
+  <div class="lbl">Pastas</div>
+  <div class="chips"><div class="chip">📁 Prints<small>Mesa · trocar…</small></div><div class="chip">📁 Gravações<small>Filmes · trocar…</small></div></div>
+
+  <div class="line" style="margin-top:8px;border-top:1px solid var(--line)">Painel de captura do macOS<kbd>⇧⌘5</kbd></div>
+
+  <div class="foot"><span class="g">Ajuda ▾</span><span class="g r">Sair</span></div>
+</div>
+<p class="note">O mesmo menu de hoje, em blocos: cada captura com o atalho nativo do macOS ao lado (pra continuar aprendendo). As Opções saem do submenu e ficam à vista. “Ajuda” abre versão, Configurações… (só no avulso), log e reportar. “Sair” e “Abrir ao iniciar” só no avulso.</p>
+</div>
+
+<div>
+<h2>2 · Gravando</h2>
+<div style="margin-bottom:10px">Barra de menus: <span class="pill">● 01:24</span> &nbsp;<span class="note">(clique = parar, como hoje)</span></div>
+<div class="pop">
+  <div class="recbar"><span style="color:var(--red);font-size:16px">●</span><div><b>01:24</b><div style="font-size:10px;color:#ffb3b3">Gravando a tela inteira</div></div><span class="stop">Parar</span></div>
+  <div class="hint">Também para com ⌃⌘Esc. O vídeo abre no Finder ao terminar.</div>
+</div>
+</div>
+
+<div>
+<h2>3 · Sem permissão</h2>
+<div class="pop">
+  <div class="head"><b>Capture</b><span class="v">0.3.0</span><span class="dot" style="background:#ffb03d"></span></div>
+  <div style="background:#2a2110;border:1px solid #5a4416;color:#ffb03d;border-radius:9px;padding:8px;display:flex;align-items:center;gap:8px">Precisa de Gravação de Tela<span style="margin-left:auto;font-size:10px;padding:3px 9px;border-radius:20px;background:var(--acc);color:#111;font-weight:700">Conceder</span></div>
+  <div class="hint">No NeyHub, “Conceder” abre a tela de Permissões. O microfone só é pedido se você ligar “Gravar o microfone”.</div>
+</div>
+</div>
+</body></html>
