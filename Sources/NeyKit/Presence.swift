@@ -4,6 +4,8 @@ import Foundation
 public struct Presence: Equatable {
     public var screen: Bool, menuBar: Bool
 
+    public init(screen: Bool, menuBar: Bool) { self.screen = screen; self.menuBar = menuBar }
+
     public static func load(_ d: UserDefaults, hasScreen: Bool) -> Presence {
         Presence(screen: d.object(forKey: "presence.screen") as? Bool ?? hasScreen,
                  menuBar: d.object(forKey: "presence.menuBar") as? Bool ?? true)

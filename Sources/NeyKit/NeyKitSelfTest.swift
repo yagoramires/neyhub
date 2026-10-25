@@ -39,6 +39,9 @@ public enum NeyKitSelfTest {
         precondition(Release.parse(Data(#"{"tag_name":"v1"}"#.utf8)) == nil)
         precondition(Release.parse(Data(#"{"tag_name":"v1","html_url":"https://e"}"#.utf8))?.notes == "")
         precondition(Release.isNewer("0.10.0", than: "0.9.9") && !Release.isNewer("1.0", than: "1.0.0"))
+        precondition(!Release.isNewer("1.0.0", than: "1.0") && Release.isNewer("1.0.1", than: "1.0"))
+        let tagged = { (t: String) in Release.parse(Data(#"{"tag_name":"\#(t)","html_url":"https://e"}"#.utf8))!.version }
+        precondition(tagged("1.0v") == "1.0v" && tagged("v1.2.3") == "1.2.3")
         precondition(Release.latestURL(repo: "yagoramires/aero").absoluteString == "https://api.github.com/repos/yagoramires/aero/releases/latest")
         precondition(Presence(screen: false, menuBar: false).normalized(hasScreen: true) == .init(screen: false, menuBar: true))
         precondition(Presence(screen: true, menuBar: false).normalized(hasScreen: false) == .init(screen: false, menuBar: false))
