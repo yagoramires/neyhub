@@ -1,7 +1,7 @@
 import Foundation
 import NeyKit
 
-/// Ponte que o NeyHub entrega a cada plugin em `start(host:)`. 
+/// Ponte que o NeyHub entrega a cada plugin em `start(host:)`.
 final class HostBridge: NSObject, NeyHost {
     private(set) var messages: [String] = []
 

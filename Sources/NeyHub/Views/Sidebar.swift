@@ -78,7 +78,7 @@ struct Sidebar: View {
                 icon().frame(width: 18, height: 18)
                 Text(title).font(.system(size: 12))
                 Spacer(minLength: 0)
-                if dot { Circle().fill(Grafite.accent).frame(width: 6, height: 6).accessibilityLabel("Falta permissão") }
+                if dot { Circle().fill(Grafite.accent).frame(width: 6, height: 6).accessibilityHidden(true) }
             }
             .foregroundStyle(selected ? Grafite.strong : Grafite.ghostText)
             .padding(.horizontal, 6).padding(.vertical, 5)
@@ -86,7 +86,7 @@ struct Sidebar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(title)
+        .accessibilityLabel(title + (dot ? ", falta permissão" : ""))
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
     }
 

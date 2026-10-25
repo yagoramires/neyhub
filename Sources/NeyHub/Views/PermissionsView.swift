@@ -16,16 +16,17 @@ extension HubModel {
     /// Ponto na sidebar: alguma permissão usada por um app instalado foi consultada e está negada.
     var missingPermission: Bool { permissionUsers.contains { granted[$0.permission] == false } }
 
-    func refreshPermissions() async {
-        for (p, _) in permissionUsers { granted[p] = await p.isGranted() }
+    @MainActor func refreshPermissions() async {
+        for (p, _) in permissionUsers {
+            let v = await p.isGranted()
+            if granted[p] != v { granted[p] = v } // só publica se mudou: senão o poll re-renderiza tudo a cada 2 s
+        }
     }
 }
 
 /// Todas as permissões do sistema num lugar só: o NeyHub é o app estável, então concedeu uma vez, vale para sempre.
 struct PermissionsView: View {
     @ObservedObject var model: HubModel
-    // Só existe com a tela visível: sair da rota remove a view e o timer.
-    private let tick = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -43,12 +44,12 @@ struct PermissionsView: View {
         }
         .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 38)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .task { await model.refreshPermissions() }
-        .onReceive(tick) { _ in Task { await model.refreshPermissions() } }
+        // O SwiftUI cancela a task ao sair da tela: só consulta com ela visível.
+        .task { while !Task.isCancelled { await model.refreshPermissions(); try? await Task.sleep(for: .seconds(2)) } }
     }
 
     private func row(_ p: Permission, apps: [String]) -> some View {
-        let ok = model.granted[p] == true
+        let state = model.granted[p], ok = state == true
         return GCard {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
@@ -56,8 +57,9 @@ struct PermissionsView: View {
                     Text("Usada por " + apps.joined(separator: ", ")).font(.system(size: 11)).foregroundStyle(Grafite.muted)
                 }
                 Spacer()
-                Text(ok ? "Concedida" : "Falta conceder").font(.system(size: 11)).foregroundStyle(ok ? Grafite.accent : Grafite.ghostText)
-                if !ok {
+                Text(state == nil ? "Verificando…" : ok ? "Concedida" : "Falta conceder").font(.system(size: 11))
+                    .foregroundStyle(ok ? Grafite.accent : Grafite.ghostText)
+                if state == false {
                     GPill(title: "Conceder") { p.request(); NSWorkspace.shared.open(p.settingsURL) }
                         .accessibilityLabel("Conceder \(p.title)")
                 }
