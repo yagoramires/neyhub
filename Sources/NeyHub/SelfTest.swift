@@ -15,8 +15,40 @@ enum SelfTest {
         store()
         notifications()
         awake()
+        hubPresence()
         lifecycle()
         if let fixture { plugins(fixture); storeInstall(fixture); storeUpdates(fixture) } else { FileHandle.standardError.write(Data("sem --fixture: pulando carga de plugins\n".utf8)) }
+    }
+
+    /// Dock + barra de menus do NeyHub: padrões, regra "nunca os dois apagados", estado dos itens e persistência (suíte isolada).
+    @MainActor static func hubPresence() {
+        let suite = "neyhub.selftest.presence"
+        let d = UserDefaults(suiteName: suite)!
+        d.removePersistentDomain(forName: suite)
+        defer { d.removePersistentDomain(forName: suite) }
+        precondition(HubPresence.load(d) == HubPresence(dock: true, menuBar: true))
+        precondition(HubPresence(dock: true, menuBar: true).setting(dock: false) == HubPresence(dock: false, menuBar: true))
+        precondition(HubPresence(dock: false, menuBar: true).setting(menuBar: false) == HubPresence(dock: true, menuBar: false))
+        precondition(HubPresence(dock: true, menuBar: false).setting(dock: false) == HubPresence(dock: false, menuBar: true))
+        precondition(HubPresence(dock: false, menuBar: false).normalized.menuBar)
+        precondition(HubPresence(dock: false, menuBar: true).policy(windowOpen: false) == .accessory)
+        precondition(HubPresence(dock: false, menuBar: true).policy(windowOpen: true) == .regular)
+        precondition(HubPresence(dock: true, menuBar: false).policy(windowOpen: false) == .regular)
+
+        let c = HubPresenceController(defaults: d)
+        let items = c.toggleItems()
+        func states() -> [NSControl.StateValue] { items.map { _ = c.validateMenuItem($0); return $0.state } }
+        precondition(items.map(\.title) == ["Mostrar ícone no Dock", "Mostrar ícone na barra de menus"] && states() == [.on, .on])
+        c.toggleDock()
+        precondition(states() == [.off, .on] && d.bool(forKey: "presence.dock") == false && d.bool(forKey: "presence.menuBar"))
+        c.toggleMenuBar() // o Dock já está apagado: volta sozinho
+        precondition(states() == [.on, .off] && d.bool(forKey: "presence.dock") && !d.bool(forKey: "presence.menuBar"))
+        precondition(HubPresence.load(d) == HubPresence(dock: true, menuBar: false) && HubPresenceController(defaults: d).presence.menuBar == false)
+        d.set(false, forKey: "presence.dock") // salvo à mão com os dois apagados
+        precondition(HubPresence.load(d) == HubPresence(dock: false, menuBar: true))
+        let menu = c.statusMenu()
+        precondition(menu.items.map(\.title) == ["Abrir NeyHub", "", "Mostrar ícone no Dock", "Mostrar ícone na barra de menus", "", "Sair do NeyHub"])
+        precondition(menu.items.last?.keyEquivalent == "q")
     }
 
     static func awake() {
@@ -303,7 +335,7 @@ extension SelfTest {
         precondition(!model.store.removeBroken("../Plugins.neyplugin") && !model.store.removeBroken("x"))
 
         // Menu principal: ⌘Q pelo terminate (applicationWillTerminate apaga o active.json), edição pelos seletores padrão.
-        let items = AppDelegate.mainMenu().items.flatMap { $0.submenu?.items ?? [] }
+        let items = AppDelegate.mainMenu(presence: HubPresenceController(defaults: UserDefaults(suiteName: "neyhub.selftest.menu")!)).items.flatMap { $0.submenu?.items ?? [] }
         let quit = items.first { $0.keyEquivalent == "q" }
         precondition(quit?.action == #selector(NSApplication.terminate(_:)) && quit?.keyEquivalentModifierMask == .command)
         let actions = Set(items.compactMap { $0.action.map(NSStringFromSelector) })

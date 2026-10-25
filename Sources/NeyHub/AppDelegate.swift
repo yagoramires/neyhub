@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let model: HubModel
     private lazy var notifications = Notifications(model: model)
     private var window: NSWindow?
+    let presence = HubPresenceController()
     private var awakeItem: AwakeStatusItem?
     private var awakeSub: AnyCancellable?
     private var updateTimer: Timer?
@@ -31,7 +32,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.mainMenu = Self.mainMenu()
+        NSApp.mainMenu = Self.mainMenu(presence: presence)
+        presence.onOpen = { [self] in showWindow() }
+        presence.install()
         DistributedNotificationCenter.default().addObserver(forName: .init("local.neyhub.show"), object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.showWindow() }
         }
@@ -83,7 +86,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
+        presence.windowChanged(open: false) // fica .accessory só se o ícone do Dock estiver desligado
     }
 
     /// NeyHub: Updater próprio (5 s, 6 h). Plugins: mesmo ritmo, aqui. Baixa sozinho; só aplica no próximo início.
@@ -110,7 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let w = window ?? MainWindow.make(model: model)
         w.delegate = self
         window = w
-        NSApp.setActivationPolicy(.regular)
+        presence.windowChanged(open: true)
         model.awake.refresh()
         if w.isMiniaturized { w.deminiaturize(nil) }
         w.makeKeyAndOrderFront(nil)
@@ -118,7 +121,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     /// Mínimo para ⌘Q, ⌘W e editar texto (campos dos plugins). Sair passa pelo applicationWillTerminate.
-    static func mainMenu() -> NSMenu {
+    static func mainMenu(presence: HubPresenceController) -> NSMenu {
         func item(_ title: String, _ action: Selector, _ key: String, _ mods: NSEvent.ModifierFlags = .command) -> NSMenuItem {
             let i = NSMenuItem(title: title, action: action, keyEquivalent: key)
             i.keyEquivalentModifierMask = mods
@@ -132,7 +135,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             return top
         }
         let main = NSMenu()
-        main.addItem(menu("NeyHub", [item("Sobre o NeyHub", #selector(NSApplication.orderFrontStandardAboutPanel(_:)), ""), .separator(),
+        main.addItem(menu("NeyHub", [item("Sobre o NeyHub", #selector(NSApplication.orderFrontStandardAboutPanel(_:)), ""), .separator()]
+                                     + presence.toggleItems() + [.separator(),
                                      item("Sair do NeyHub", #selector(NSApplication.terminate(_:)), "q")]))
         main.addItem(menu("Editar", [item("Desfazer", Selector(("undo:")), "z"), item("Refazer", Selector(("redo:")), "z", [.command, .shift]),
                                      .separator(), item("Recortar", #selector(NSText.cut(_:)), "x"), item("Copiar", #selector(NSText.copy(_:)), "c"),

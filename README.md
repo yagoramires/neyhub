@@ -69,6 +69,8 @@ Cada app escolhe onde aparece, no detalhe do card na Loja (ou no topo da tela do
 - **Barra de menus**: o NeyHub mostra o ícone do app na barra de menus.
 - **Os dois**.
 
+O próprio NeyHub tem ícone no Dock e na barra de menus (ícone `square.grid.2x2`), os dois ligados por padrão; para ocultar cada um use o menu do ícone ou o menu **NeyHub**. Sempre sobra um dos dois (apagar o último religa o outro).
+
 App sem tela (como o Aero) só tem **Mostrar na barra de menus**. Esconder o ícone nunca desliga o app: o Aero continua encaixando e o Dose continua lembrando.
 
 ## Atualizações
