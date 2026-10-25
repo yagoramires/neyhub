@@ -27,5 +27,6 @@ if let flag = arguments.firstIndex(of: "--snapshots"), arguments.indices.contain
     Snapshots.run(into: URL(fileURLWithPath: arguments[flag + 1]))
     exit(0)
 }
-app.setActivationPolicy(.regular)
+let delegate = AppDelegate()
+app.delegate = delegate
 app.run()

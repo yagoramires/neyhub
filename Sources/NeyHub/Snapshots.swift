@@ -41,13 +41,18 @@ enum Snapshots {
 
     static func run(into folder: URL) {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let renderer = MainActor.assumeIsolated { ImageRenderer(content: Sample()) }
+        save(Sample(), as: "components.png", in: folder)
+        save(RootView(model: HubModel()).frame(width: 900, height: 600), as: "window-empty.png", in: folder)
+        print("ok \(folder.path)")
+    }
+
+    private static func save<V: View>(_ view: V, as name: String, in folder: URL) {
+        let renderer = MainActor.assumeIsolated { ImageRenderer(content: view) }
         MainActor.assumeIsolated { renderer.scale = 2 }
         guard let image = MainActor.assumeIsolated({ renderer.nsImage }), let tiff = image.tiffRepresentation,
               let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else {
-            print("falhou"); exit(1)
+            print("falhou \(name)"); exit(1)
         }
-        try? png.write(to: folder.appendingPathComponent("components.png"))
-        print("ok \(folder.path)")
+        try? png.write(to: folder.appendingPathComponent(name))
     }
 }
