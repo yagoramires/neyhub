@@ -26,6 +26,7 @@ final class HubModel: ObservableObject {
     /// Updater do próprio NeyHub (AppDelegate); "Reiniciar agora" aplica antes de reabrir.
     var updater: Updater?
     @Published var busy: Set<String> = []
+    var checking = false // só na main
     @Published var detail: String?                           // id aberto no detalhe da Loja
 
     init(store: PluginStore = PluginStore(root: PluginStore.defaultRoot)) { self.store = store }

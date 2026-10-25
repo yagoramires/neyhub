@@ -417,12 +417,19 @@ extension SelfTest {
         try! Data(String(contentsOf: manifest, encoding: .utf8).replacingOccurrences(of: "1.0.0", with: "0.9.0").utf8).write(to: manifest)
         let before = digest(installed)
         let hello = CatalogEntry(id: "local.hello", name: "Hello", repo: "x/hello", summary: "", hasScreen: true)
-        let broken = CatalogEntry(id: "local.sumido", name: "Sumido", repo: "x/sumido", summary: "", hasScreen: false) // sem rota: 404
+        // Instalado de verdade, mas sem rota no servidor (404): precisa ser consultado e falhar sem parar o seguinte.
+        let sumido = root.appendingPathComponent("Plugins/Sumido.neyplugin")
+        try! fm.copyItem(at: installed, to: sumido)
+        let sm = sumido.appendingPathComponent("manifest.json")
+        try! Data(String(contentsOf: sm, encoding: .utf8).replacingOccurrences(of: "local.hello", with: "local.sumido").replacingOccurrences(of: "\"Hello\"", with: "\"Sumido\"").utf8).write(to: sm)
+        precondition(PluginStore.manifest(at: sumido)?.id == "local.sumido" && PluginStore.manifest(at: sumido)?.name == "Sumido")
+        let broken = CatalogEntry(id: "local.sumido", name: "Sumido", repo: "x/sumido", summary: "", hasScreen: false)
         func check() -> (latest: [String: Release], staged: [String: String]) { wait { await store.checkUpdates([hello]) } }
 
         // Contract 2: recusa e o instalado fica byte a byte igual.
         serve("x/hello", "1.0.0", future)
-        precondition(waitError { try await store.stageUpdate(hello, release: wait { await store.latest("x/hello") }!) } == .contract(2))
+        let futureRelease = wait { await store.latest("x/hello") }!
+        precondition(waitError { try await store.stageUpdate(hello, release: futureRelease) } == .contract(2))
         precondition(digest(installed) == before && store.stagedVersions().isEmpty, "contract 2 mexeu no instalado")
         precondition(check().staged.isEmpty && digest(installed) == before)
 
@@ -430,6 +437,7 @@ extension SelfTest {
         serve("x/hello", "1.0.0", good, notes: "- novo")
         FakeServer.reset(keepingRoutes: true)
         let all = wait { await store.checkUpdates([broken, hello]) }
+        precondition(FakeServer.hits("https://fake.test/x/sumido/latest") == 1, "o plugin com falha nem foi consultado")
         precondition(all.staged == ["local.hello": "1.0.0"] && all.latest["local.hello"]?.version == "1.0.0" && all.latest["local.sumido"] == nil)
         precondition(digest(installed) == before, "preparar não troca o instalado")
         precondition(FakeServer.hits("https://fake.test/dl/x/hello/Hello-1.0.0.neyplugin") == 1)
@@ -441,11 +449,14 @@ extension SelfTest {
         // Já preparada na mesma versão: não baixa de novo.
         precondition(check().staged.isEmpty && FakeServer.hits("https://fake.test/dl/x/hello/Hello-1.0.0.neyplugin") == 1)
 
-        // Só applyPending troca, e informa o que trocou com as notas (que são apagadas).
+        // Só applyPending troca, e informa o que trocou com as notas (que ficam até serem mostradas).
         let applied = store.applyPending()
         precondition(applied == [AppliedUpdate(name: "Hello", version: "1.0.0", notes: "- novo")], "\(applied)")
         precondition(PluginStore.manifest(at: installed)?.version == "1.0.0" && store.stagedVersions().isEmpty)
-        precondition((try! fm.contentsOfDirectory(atPath: root.appendingPathComponent("Staged").path)).isEmpty, "notas não foram apagadas")
+        let stagedDir = root.appendingPathComponent("Staged")
+        precondition(try! fm.contentsOfDirectory(atPath: stagedDir.path) == ["Hello.notes.md"], "notas somem antes de mostrar")
+        store.clearNotes(applied)
+        precondition((try! fm.contentsOfDirectory(atPath: stagedDir.path)).isEmpty, "notas não foram apagadas")
         precondition(store.applyPending().isEmpty)
 
         // Marcado para remoção: nada é preparado (manifest velho de novo, release mais nova).

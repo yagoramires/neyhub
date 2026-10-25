@@ -77,7 +77,13 @@ final class PluginStore {
     func stageUpdate(_ e: CatalogEntry, release: Release) async throws {
         let url = try await receive(e, release, into: "Staged")
         // Ao lado do plugin para sobreviver ao reinício; o applyPending lê e apaga.
+        try? fm.removeItem(at: notesURL(url)) // notas de uma versão anterior não valem para esta
         try? release.notes.write(to: notesURL(url), atomically: true, encoding: .utf8)
+    }
+
+    /// Depois de mostradas.
+    func clearNotes(_ applied: [AppliedUpdate]) {
+        for a in applied { try? fm.removeItem(at: dir("Staged").appendingPathComponent("\(a.name).notes.md")) }
     }
 
     private func notesURL(_ bundle: URL) -> URL { bundle.deletingPathExtension().appendingPathExtension("notes.md") }
@@ -94,7 +100,10 @@ final class PluginStore {
             let have = stagedVersions()[e.id]
             guard !isMarkedForRemoval(e.id), needsUpdate(installed: m, latest: release),
                   have.map({ Release.isNewer(release.version, than: $0) }) ?? true else { continue }
-            do { try await stageUpdate(e, release: release); staged[e.id] = release.version } catch { NSLog("NeyHub: \(e.name) \(release.version) não preparada: \(error)") }
+            do {
+                try await stageUpdate(e, release: release)
+                if !isMarkedForRemoval(e.id) { staged[e.id] = release.version } // desinstalado durante o download: sem aviso
+            } catch { NSLog("NeyHub: \(e.name) \(release.version) não preparada: \(error)") }
         }
         return (latest, staged)
     }
@@ -137,14 +146,14 @@ final class PluginStore {
                     _ = try fm.replaceItemAt(dest, withItemAt: staged)
                     if let m = Self.manifest(at: dest) { applied.append(AppliedUpdate(name: m.name, version: m.version, notes: notes)) }
                 } else { try fm.moveItem(at: staged, to: dest) }
-                try? fm.removeItem(at: notesURL(staged))
             } catch {
                 NSLog("NeyHub: não deu pra aplicar \(staged.lastPathComponent): \(error)")
             }
         }
         // Notas de quem não está mais em Staged/ (removido, recusado) não ficam para trás.
-        let stillStaged = Set(bundles(in: "Staged").map { notesURL($0).lastPathComponent })
-        for f in (try? fm.contentsOfDirectory(atPath: dir("Staged").path)) ?? [] where f.hasSuffix(".notes.md") && !stillStaged.contains(f) {
+        // As recém-aplicadas ficam até o WhatsNew mostrar (clearNotes): crash ao carregar não perde o texto.
+        let keep = Set(bundles(in: "Staged").map { notesURL($0).lastPathComponent } + applied.map { "\($0.name).notes.md" })
+        for f in (try? fm.contentsOfDirectory(atPath: dir("Staged").path)) ?? [] where f.hasSuffix(".notes.md") && !keep.contains(f) {
             try? fm.removeItem(at: dir("Staged").appendingPathComponent(f))
         }
         return applied

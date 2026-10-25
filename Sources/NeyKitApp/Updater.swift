@@ -158,14 +158,19 @@ public final class Updater {
         return true
     }
 
+    /// Reabre `app` depois que este processo sair; desiste em 30 s (se não saiu, não abre uma 2ª instância).
+    public static func relaunch(_ app: URL) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/sh")
+        p.arguments = ["-c", #"i=0; while /bin/kill -0 "$1" 2>/dev/null && [ $i -lt 150 ]; do sleep 0.2; i=$((i+1)); done; /bin/kill -0 "$1" 2>/dev/null || /usr/bin/open "$0""#,
+                       app.path, String(ProcessInfo.processInfo.processIdentifier)]
+        do { try p.run() } catch { FileHandle.standardError.write(Data("relaunch: \(error.localizedDescription)\n".utf8)) }
+    }
+
     /// Botão "Reiniciar agora": aplica, reabre depois que este processo sair e encerra.
     public func relaunchNow() {
         guard applyStaged() else { return }
-        let relaunch = Process()
-        relaunch.executableURL = URL(fileURLWithPath: "/bin/sh")
-        relaunch.arguments = ["-c", #"while /bin/kill -0 "$1" 2>/dev/null; do sleep 0.2; done; /usr/bin/open "$0""#,
-                              Self.currentApp.path, String(ProcessInfo.processInfo.processIdentifier)]
-        do { try relaunch.run() } catch { log("não deu pra reabrir (\(error.localizedDescription))") }
+        Self.relaunch(Self.currentApp)
         NSApp.terminate(nil)
     }
 

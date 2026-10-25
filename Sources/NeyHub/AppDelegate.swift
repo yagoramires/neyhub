@@ -29,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         Task { await model.refreshPermissions() } // ponto da sidebar já no início
         startUpdates()
         showWhatsNew(applied)
+        model.store.clearNotes(applied)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -62,7 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func showWhatsNew(_ applied: [AppliedUpdate]) {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
         var sections: [(title: String, notes: String)] = []
-        if let notes = Updater.notesAfterUpdate(id: "local.neyhub", current: version) { sections.append(("NeyHub \(version)", notes)) }
+        if let notes = Updater.notesAfterUpdate(id: "local.neyhub", current: version), !notes.isEmpty { sections.append(("NeyHub \(version)", notes)) }
         sections += applied.filter { !$0.notes.isEmpty }.map { ("\($0.name) \($0.version)", $0.notes) }
         if !sections.isEmpty { WhatsNew.show(sections: sections) }
     }
