@@ -24,7 +24,9 @@ for arg in "$@"; do
 done
 
 IDENTITY="Aero Local Signing"
-security find-identity -p codesigning | grep -q "$IDENTITY" || { echo "✗ sem a identidade \"$IDENTITY\"" >&2; exit 1; }
+# here-string, não pipe: com pipefail, o grep -q saindo cedo pode dar SIGPIPE no security e um falso "sem identidade".
+IDENTS=$(security find-identity -p codesigning)
+grep -q "$IDENTITY" <<<"$IDENTS" || { echo "✗ sem a identidade \"$IDENTITY\"" >&2; exit 1; }
 VALIDATOR="$NEYHUB_PATH/build/NeyHub.app/Contents/MacOS/NeyHub"
 if [[ -n "$PLUGIN_PRODUCT" && ! -x "$VALIDATOR" ]]; then
   echo "✗ validador não encontrado: $VALIDATOR (rode scripts/build.sh no neyhub ou defina NEYHUB_PATH)" >&2
@@ -34,7 +36,7 @@ fi
 V=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
 NOTES="build/notes-$V.md"
 mkdir -p build dist
-"$NEYHUB_PATH/scripts/changelog-section.sh" "$V" CHANGELOG.md > "$NOTES"
+"$NEYHUB_PATH/scripts/changelog-section.sh" "$V" CHANGELOG.md > "$NOTES" || { rm -f "$NOTES"; exit 1; }
 rm -f "dist/$NAME-$V".*
 
 # App universal assinado + zip (o build.sh --dist faz os dois)
@@ -45,7 +47,7 @@ ASSETS=("dist/$NAME-$V.zip")
 # dmg: .app + atalho para /Applications
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
-cp -R "$APP" "$STAGE/"
+ditto "$APP" "$STAGE/$NAME.app"
 ln -s /Applications "$STAGE/Applications"
 hdiutil create -volname "$NAME" -srcfolder "$STAGE" -ov -format UDZO "dist/$NAME-$V.dmg" >/dev/null
 ASSETS=("dist/$NAME-$V.dmg" "${ASSETS[@]}")

@@ -6,6 +6,7 @@ cd "$(dirname "$0")/.."
 
 scripts/build.sh debug
 cmp -s catalog.json Resources/catalog.json || { echo "✗ catalog.json e Resources/catalog.json diferentes" >&2; exit 1; }
+cmp -s templates/release-app.sh scripts/release.sh || { echo "✗ scripts/release.sh diferente de templates/release-app.sh" >&2; exit 1; }
 
 ERR=$(mktemp)
 cleanup() {
@@ -54,10 +55,18 @@ printf '# Changelog\n\n## [0.2.0] - 2026-11-01\n### Corrigido\n- b\n\n## [0.1.0]
 [[ "$(scripts/changelog-section.sh 0.2.0 "$CL")" == $'### Corrigido\n- b' ]] || { echo "✗ changelog-section 0.2.0" >&2; exit 1; }
 [[ "$(scripts/changelog-section.sh 0.1.0 "$CL")" == $'### Adicionado\n- a' ]] || { echo "✗ changelog-section 0.1.0" >&2; exit 1; }
 if scripts/changelog-section.sh 9.9.9 "$CL" >/dev/null 2>&1; then echo "✗ versão inexistente deveria falhar" >&2; exit 1; fi
+# "## [" dentro de bloco de código não fecha a seção.
+printf '## [0.3.0]\n### Notas\n```md\n## [exemplo]\n```\n- c\n\n## [0.2.0]\n- b\n' > "$CL"
+[[ "$(scripts/changelog-section.sh 0.3.0 "$CL")" == $'### Notas\n```md\n## [exemplo]\n```\n- c' ]] || { echo "✗ changelog-section cortou no bloco de código" >&2; exit 1; }
 NH=build/NeyHub.app/Contents/MacOS/NeyHub
 $NH --validate-manifest Fixtures/HelloPlugin/manifest.json >/dev/null || { echo "✗ manifest bom recusado" >&2; exit 1; }
 sed 's#libHelloPlugin.dylib#../x#' Fixtures/HelloPlugin/manifest.json > "$FIX/bad.json"
 if $NH --validate-manifest "$FIX/bad.json" >/dev/null 2>&1; then echo "✗ binary ../x aceito" >&2; exit 1; fi
 sed 's/"contract": 1/"contract": 2/' Fixtures/HelloPlugin/manifest.json > "$FIX/c2.json"
 if $NH --validate-manifest "$FIX/c2.json" >/dev/null 2>&1; then echo "✗ contract 2 aceito" >&2; exit 1; fi
+# Sem argumento: uso no stderr e exit 2 (não abre o app); erros também no stderr.
+rc=0; OUT=$($NH --validate-manifest 2>/dev/null) || rc=$?
+(( rc == 2 )) && [[ -z "$OUT" ]] || { echo "✗ --validate-manifest sem argumento: exit $rc, stdout \"$OUT\"" >&2; exit 1; }
+OUT=$($NH --validate-manifest "$FIX/bad.json" 2>/dev/null) || true
+[[ -z "$OUT" ]] || { echo "✗ erro do --validate-manifest foi pro stdout: $OUT" >&2; exit 1; }
 echo "selftest release ok"

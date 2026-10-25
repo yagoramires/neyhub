@@ -123,6 +123,17 @@ enum SelfTest {
         precondition(PluginHost.problemText(.alreadyLoaded) == "Reinicie o NeyHub para reinstalar")
         precondition(PluginHost.problemText(.symbol) == "Não deu pra carregar")
         precondition(PluginHost.conflict(id: "local.inexistente") == nil)
+        // Avulso com NeyHubAware resolve o conflito sozinho (HubCheck): o NeyHub não empilha o alerta dele.
+        func fakeApp(_ info: [String: Any]) -> URL {
+            let app = temp("aware").appendingPathComponent("A.app")
+            try! fm.createDirectory(at: app.appendingPathComponent("Contents"), withIntermediateDirectories: true)
+            precondition(NSDictionary(dictionary: info).write(to: app.appendingPathComponent("Contents/Info.plist"), atomically: true))
+            return app
+        }
+        precondition(PluginHost.handlesConflictItself(fakeApp(["CFBundleIdentifier": "local.x", "NeyHubAware": true])))
+        precondition(!PluginHost.handlesConflictItself(fakeApp(["CFBundleIdentifier": "local.x"])))
+        precondition(!PluginHost.handlesConflictItself(fakeApp(["CFBundleIdentifier": "local.x", "NeyHubAware": "yes"])))
+        precondition(!PluginHost.handlesConflictItself(nil))
 
         let root = temp("host")
         defer { try? fm.removeItem(at: root) }

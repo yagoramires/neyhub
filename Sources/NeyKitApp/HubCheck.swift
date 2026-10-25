@@ -21,6 +21,7 @@ public enum HubCheck {
     }
 
     /// Avisa; se o NeyHub ainda roda `id` depois da resposta, tira o avulso dos itens de login e encerra (true).
+    /// true = o app está encerrando (o chamador não inicia mais nada).
     /// false: o NeyHub largou o id enquanto o alerta estava aberto ("Agora não" lá) — o avulso continua aberto e no login.
     public static func leaveForHub(id: String, name: String) -> Bool {
         NSApp.activate(ignoringOtherApps: true)

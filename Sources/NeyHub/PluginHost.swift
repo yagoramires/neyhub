@@ -93,6 +93,11 @@ enum PluginHost {
 
     static let paused = "Pausado: avulso aberto"
 
+    /// Avulso que declara `NeyHubAware` no Info.plist mostra o próprio alerta (HubCheck) e sai: o NeyHub não mostra o dele.
+    static func handlesConflictItself(_ bundleURL: URL?) -> Bool {
+        bundleURL.flatMap(Bundle.init(url:))?.object(forInfoDictionaryKey: "NeyHubAware") as? Bool == true
+    }
+
     static func begin(_ p: LoadedPlugin, model: HubModel, host: HostBridge) {
         p.plugin.start(host: host)
         model.loaded.append(p)
@@ -111,7 +116,7 @@ enum PluginHost {
             // Fora do callback do KVO: o alerta é modal.
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
-                    for app in apps {
+                    for app in apps where !app.isTerminated && !handlesConflictItself(app.bundleURL) {
                         guard let p = model.loaded.first(where: { $0.manifest.id == app.bundleIdentifier }) else { continue }
                         let id = p.manifest.id
                         guard alerting.insert(id).inserted else { continue }
