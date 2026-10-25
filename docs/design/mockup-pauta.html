@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Pauta · mockup</title>
+<style>
+:root{--bg:#121315;--side:#0f1012;--card:#1a1b1f;--line:#26282e;--txt:#d6d8dd;--muted:#8a8d96;--acc:#c6ff3d;--slack:#e01e5a;--jira:#2684ff}
+*{box-sizing:border-box}body{margin:0;background:#0b0c0d;color:var(--txt);font:12px -apple-system,"SF Pro Text",Inter,sans-serif;padding:28px;display:flex;flex-direction:column;gap:24px;align-items:flex-start}
+h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.win{width:1060px;height:640px;display:flex;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg)}
+.side{width:190px;background:var(--side);border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:2px}
+.brand{font-weight:800;font-size:14px;color:#fff;margin:0 6px 14px}.brand b{color:var(--acc)}
+.nav{padding:6px 8px;border-radius:7px;color:var(--muted)}.nav.on{background:#1d1f24;color:#fff}
+.sec{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#5d6068;margin:14px 8px 4px}
+.awake{margin-top:auto;background:#1c2410;border:1px solid #3c5214;border-radius:9px;padding:7px 9px;color:var(--acc)}
+.main{flex:1;padding:18px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.top{display:flex;align-items:center;gap:8px}
+.chip{padding:5px 11px;border-radius:20px;background:var(--card);border:1px solid var(--line);color:var(--muted)}.chip.on{background:#e8e9ec;color:#111;font-weight:600}
+.chip b{margin-left:4px;font-weight:600}
+.search{margin-left:auto;width:220px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:#5d6068}
+.hero{background:linear-gradient(90deg,#1d1f12,#1a1b1f 60%);border:1px solid #3c5214;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:16px}
+.hero q{font-size:17px;color:#fff;font-weight:600;display:block;margin-top:4px}.hero small{color:var(--muted)}
+.btn{padding:6px 12px;border-radius:8px;background:#e8e9ec;color:#111;font-weight:600;white-space:nowrap}.btn.g{background:var(--card);color:var(--txt);border:1px solid var(--line);font-weight:500}
+.cols{display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:12px;flex:1;min-height:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px;display:flex;flex-direction:column;min-height:0}
+.lbl{display:flex;align-items:center;gap:6px;font-weight:600;color:#fff;margin-bottom:8px}.lbl span{margin-left:auto;font-weight:400;color:var(--muted);font-size:11px}
+.row{display:flex;gap:8px;padding:8px 0;border-top:1px solid var(--line)}.row:first-of-type{border:0}
+.row .ic{width:16px;flex:none;font-weight:800}.row b{color:#fff}.row p{margin:2px 0 0;color:var(--muted);font-size:11px;line-height:1.35}
+.row .t{margin-left:auto;color:#5d6068;font-size:10.5px;white-space:nowrap}.row.dim{opacity:.45}
+.tag{font-size:9.5px;padding:1px 6px;border-radius:5px;background:#2a2d33;color:var(--muted)}
+.ok{color:#3fb950}.bad{color:#f85149}
+.kan{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:1}
+.kc h4{margin:0 0 6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tk{background:#121316;border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:6px}.tk small{color:var(--jira);font-size:10px}.tk div{color:#fff;margin-top:2px;line-height:1.3}
+.foot{display:flex;align-items:center;gap:8px;color:#5d6068;font-size:11px}
+.note{color:var(--muted);max-width:1060px;line-height:1.55}
+</style></head><body>
+
+<div>
+<h2>Tela do Pauta dentro do NeyHub</h2>
+<div class="win">
+  <div class="side">
+    <div class="brand">ney<b>hub</b></div>
+    <div class="nav">Loja</div><div class="nav">Permissões</div>
+    <div class="sec">Instalados</div><div class="nav">● Dose</div><div class="nav">● Deck</div><div class="nav on">● Pauta</div>
+    <div class="awake">☾ Acordado</div>
+  </div>
+  <div class="main">
+    <div class="top">
+      <span class="chip on">Tudo <b>16</b></span><span class="chip"><span style="color:var(--slack)">✱</span> Slack <b>4</b></span><span class="chip">GitHub <b>3</b></span><span class="chip"><span style="color:var(--jira)">◆</span> Jira <b>9</b></span>
+      <span class="search">Buscar em tudo…</span>
+    </div>
+
+    <div class="hero">
+      <div style="flex:1"><small><span style="color:var(--slack)">✱</span> Ana, na DM, há 2 min</small><q>“Conseguiu olhar aquele PR do checkout? Preciso fechar hoje ainda”</q></div>
+      <span class="btn">Abrir no Slack</span><span class="btn g">Marcar como visto</span>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <div class="lbl"><span style="color:var(--slack)">✱</span> Slack<span>Marcar tudo como visto</span></div>
+        <div class="row"><span class="ic" style="color:var(--slack)">✱</span><div><b>Bruno</b> <span class="tag">#deploys</span><p>@você o deploy de homologação travou no passo de migração, consegue olhar?</p></div><span class="t">25 min</span></div>
+        <div class="row"><span class="ic" style="color:var(--slack)">✱</span><div><b>Carla</b><p>Valeu pela ajuda ontem! Funcionou.</p></div><span class="t">2 h</span></div>
+        <div class="row"><span class="ic" style="color:var(--slack)">✱</span><div><b>Diego</b> <span class="tag">#front</span><p>Alguém sabe por que o lint quebrou na main?</p></div><span class="t">3 h</span></div>
+        <div class="row dim"><span class="ic" style="color:var(--slack)">✱</span><div><b>Eva</b><p>Te mandei o link da reunião</p></div><span class="t">2 d</span></div>
+      </div>
+
+      <div class="card">
+        <div class="lbl">GitHub · Revisões<span>3 esperando você</span></div>
+        <div class="row"><span class="ic">⎇</span><div><b>feat: tela de resumo do pedido</b><p>app-web #482 · Bruno · <span class="ok">✓ checks</span></p></div><span class="t">25 min</span></div>
+        <div class="row"><span class="ic">⎇</span><div><b>fix: foco do botão no modo escuro</b> <span class="tag">rascunho</span><p>app-web #479 · Carla · <span class="bad">✕ 1 falhou</span></p></div><span class="t">2 h</span></div>
+        <div class="row dim"><span class="ic">⎇</span><div><b>chore: sobe a versão do node</b><p>infra #77 · Diego</p></div><span class="t">2 d</span></div>
+        <div class="lbl" style="margin-top:12px">Seus PRs<span>2 abertos</span></div>
+        <div class="row"><span class="ic">⎇</span><div><b>feat: filtro por período</b><p>app-web #475 · 2 aprovações · <span class="ok">✓ pronto pra merge</span></p></div></div>
+      </div>
+
+      <div class="card">
+        <div class="lbl"><span style="color:var(--jira)">◆</span> Seus cards<span>Sprint Lince · faltam 4 dias</span></div>
+        <div class="row"><span class="ic" style="color:var(--jira)">◆</span><div><b>Botão de voltar some no checkout</b><p>WEB-298 · alta</p></div><span class="t"><span class="tag">Em andamento ▾</span></span></div>
+        <div class="row"><span class="ic" style="color:var(--jira)">◆</span><div><b>Traduzir tela de perfil para EN</b><p>WEB-305</p></div><span class="t"><span class="tag">Code Review ▾</span></span></div>
+        <div class="row"><span class="ic" style="color:var(--jira)">◆</span><div><b>Ajustar tokens de cor no header</b><p>WEB-311</p></div><span class="t"><span class="tag">To Do ▾</span></span></div>
+        <div class="foot" style="margin-top:6px">6 cards livres no projeto ▸</div>
+      </div>
+    </div>
+
+    <div class="foot">Atualizado há 1 min · ↻ · ⚙ Configurações (contas, filtros, densidade, intervalo)</div>
+  </div>
+</div>
+</div>
+
+<p class="note"><b style="color:#fff">O que é:</b> o popover de hoje aberto em três colunas — Slack, GitHub e Jira lado a lado em vez de empilhados — com o destaque (“o mais importante agora”) no topo e os mesmos filtros Tudo / Slack / GitHub / Jira e a busca. O que não cabia no popover: mensagem inteira em vez de cortada, checks e autor dos PRs, uma seção “Seus PRs”, e os cards do sprint em lista, com o status mudando pelo menu do card como hoje. Nomes e textos são de exemplo. O popover da barra continua igual, só no Grafite.</p>
+</body></html>
