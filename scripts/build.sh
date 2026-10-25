@@ -17,7 +17,8 @@ done
 
 # Sem fallback ad-hoc: plugins e updates dependem da assinatura fixa.
 IDENTITY="Aero Local Signing"
-if ! security find-identity -p codesigning | grep -q "$IDENTITY"; then
+IDENTS=$(security find-identity -p codesigning)
+if ! grep -q "$IDENTITY" <<<"$IDENTS"; then
   echo "✗ sem a identidade \"$IDENTITY\": rode scripts/setup-signing.sh" >&2
   exit 1
 fi

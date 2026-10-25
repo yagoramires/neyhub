@@ -15,9 +15,15 @@ cleanup() {
 trap cleanup EXIT
 
 # Fixtures (Task 3) entram aqui: --fixture <pasta>
-build/NeyHub.app/Contents/MacOS/NeyHub --selftest 2>"$ERR"
+rc=0
+build/NeyHub.app/Contents/MacOS/NeyHub --selftest "$@" 2>"$ERR" || rc=$?
 if grep -q "is implemented in both" "$ERR"; then
   echo "✗ classe duplicada entre módulos:" >&2
   cat "$ERR" >&2
   exit 1
+fi
+if (( rc != 0 )); then
+  echo "✗ selftest falhou (exit $rc):" >&2
+  cat "$ERR" >&2
+  exit $rc
 fi
