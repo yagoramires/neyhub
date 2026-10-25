@@ -69,7 +69,8 @@ public enum NeyKitSelfTest {
         Presence(screen: false, menuBar: true).save(d)
         precondition(Presence.load(d, hasScreen: true) == .init(screen: false, menuBar: true))
         d.removePersistentDomain(forName: name)
-        precondition(AppDefaults.forApp("local.neyhub") === UserDefaults.standard)
-        precondition(AppDefaults.forApp("local.aero") !== UserDefaults.standard)
+        // Roda dentro de qualquer app (NeyHub, Aero, Dose): compara com o próprio bundle id.
+        if let me = Bundle.main.bundleIdentifier { precondition(AppDefaults.forApp(me) === UserDefaults.standard) }
+        precondition(AppDefaults.forApp("local.neyhub.selftest.outro") !== UserDefaults.standard)
     }
 }
