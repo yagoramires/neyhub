@@ -24,12 +24,13 @@ enum Awake {
         return "\(user) ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1"
     }
 
-    /// Roda inteiro como root: o arquivo temporário é de root, então ninguém o troca entre checar e instalar.
+    /// Roda inteiro como root. O temporário fica em /private/tmp (raiz, sticky): o $TMPDIR herdado seria uma pasta do usuário,
+    /// onde ele poderia trocar o arquivo entre o visudo e o install.
     static func installScript(user: String) -> String? {
         guard let line = sudoersLine(user: user) else { return nil }
         return """
         set -e
-        t=$(/usr/bin/mktemp)
+        t=$(/usr/bin/mktemp /private/tmp/neyhub.XXXXXX)
         trap '/bin/rm -f "$t"' EXIT
         printf '%s\\n' '\(line)' > "$t"
         /usr/sbin/visudo -cf "$t"
@@ -42,9 +43,10 @@ enum Awake {
         return "do shell script \"\(q)\" with administrator privileges"
     }
 
-    static func isEnabled() -> Bool {
+    /// nil = não deu para ler (a UI mantém o último valor conhecido).
+    static func isEnabled() -> Bool? {
         let r = run("/usr/bin/pmset", ["-g"])
-        return r.status == 0 && parse(pmset: r.out) == true
+        return r.status == 0 ? parse(pmset: r.out) : nil
     }
 
     /// Sem senha via sudoers; se a regra ainda não existe, instala (1 prompt) e tenta de novo uma vez.

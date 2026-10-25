@@ -26,7 +26,7 @@ enum SelfTest {
         precondition(Awake.sudoersLine(user: "x ALL=(ALL) ALL #") == nil && Awake.sudoersLine(user: "") == nil)
         precondition(Awake.installScript(user: "x;rm") == nil)
         let script = Awake.installScript(user: "yagoramires")!
-        let at = ["mktemp", "visudo -cf", "install -m 0440 -o root -g wheel"].map { script.range(of: $0)?.lowerBound }
+        let at = ["/usr/bin/mktemp /private/tmp/neyhub.XXXXXX", "visudo -cf", "install -m 0440 -o root -g wheel"].map { script.range(of: $0)?.lowerBound }
         precondition(!at.contains { $0 == nil } && at[0]! < at[1]! && at[1]! < at[2]!)
         precondition(script.contains("'\(line)'"))
         // O literal do AppleScript não pode ter aspa sem escape (senão o script de root vira outro comando).

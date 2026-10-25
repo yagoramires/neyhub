@@ -6,7 +6,7 @@ import SwiftUI
 
 /// Estado do Acordado: sempre o do sistema (`pmset -g`), nunca um valor salvo.
 final class AwakeModel: ObservableObject {
-    @Published private(set) var on = false
+    @Published private(set) var on: Bool? // nil até a primeira leitura real
     @Published private(set) var busy = false
     @Published private(set) var error: String?
     @Published var showInMenuBar = AppDefaults.forApp("local.neyhub").bool(forKey: AwakeModel.menuBarKey) {
@@ -25,7 +25,7 @@ final class AwakeModel: ObservableObject {
         guard !busy else { return }
         Task { @MainActor in
             let v = await Task.detached { Awake.isEnabled() }.value
-            if !busy, v != on { on = v } // só publica se mudou
+            if !busy, let v, v != on { on = v } // só publica se mudou
         }
     }
 
@@ -38,7 +38,7 @@ final class AwakeModel: ObservableObject {
             catch AwakeError.cancelled {} // o usuário desistiu: o switch só volta ao estado real
             catch AwakeError.failed(let msg) { error = "Falhou: " + (msg.split(separator: "\n").first.map(String.init) ?? "sem detalhe") }
             catch { self.error = "Falhou: \(error.localizedDescription)" }
-            on = await Task.detached { Awake.isEnabled() }.value
+            on = await Task.detached { Awake.isEnabled() }.value ?? on
             busy = false
         }
     }
@@ -53,8 +53,8 @@ struct AwakeSwitch: View {
             HStack {
                 Text("☾ Acordado").font(.system(size: 11)).foregroundStyle(Grafite.accent)
                 Spacer()
-                GSwitch(isOn: Binding(get: { awake.on }, set: { awake.toggle(to: $0) }), label: "Acordado")
-                    .disabled(awake.busy).opacity(awake.busy ? 0.6 : 1)
+                GSwitch(isOn: Binding(get: { awake.on ?? false }, set: { awake.toggle(to: $0) }), label: "Acordado")
+                    .disabled(awake.busy || awake.on == nil).opacity(awake.busy || awake.on == nil ? 0.6 : 1)
             }
             .padding(.leading, 7).padding(.vertical, 1)
             .background(Grafite.awakeBg, in: RoundedRectangle(cornerRadius: 9))
@@ -64,8 +64,8 @@ struct AwakeSwitch: View {
                 Text(e).font(.system(size: 10)).foregroundStyle(Grafite.muted).lineLimit(2).padding(.horizontal, 4)
             }
         }
-        // O SwiftUI cancela a task ao sair da tela: só consulta com a janela aberta.
-        .task { while !Task.isCancelled { awake.refresh(); try? await Task.sleep(for: .seconds(10)) } }
+        // A janela só sai de cena (orderOut), a view continua viva: só consulta com a janela visível.
+        .task { while !Task.isCancelled { if NSApp.windows.contains(where: { $0.isVisible && $0.canBecomeMain }) { awake.refresh() }; try? await Task.sleep(for: .seconds(10)) } }
     }
 }
 
@@ -82,18 +82,21 @@ final class AwakeStatusItem: NSObject, NSMenuDelegate {
         toggle.target = self
         let menu = NSMenu()
         menu.delegate = self
+        menu.autoenablesItems = false
         menu.addItem(toggle)
         item.menu = menu
-        sub = awake.$on.sink { [weak self] on in self?.render(on) }
+        sub = awake.$on.combineLatest(awake.$busy).sink { [weak self] on, busy in self?.render(on, busy: busy) }
     }
 
     deinit { NSStatusBar.system.removeStatusItem(item) }
 
-    private func render(_ on: Bool) {
+    private func render(_ on: Bool?, busy: Bool) {
+        toggle.isEnabled = !busy && on != nil // $on emite antes de gravar: usar o valor recebido, não awake.on
+        let on = on == true
         toggle.state = on ? .on : .off
         item.button?.image = NSImage(systemSymbolName: on ? "moon.zzz.fill" : "moon.zzz", accessibilityDescription: on ? "Acordado ligado" : "Acordado desligado")
     }
 
     func menuWillOpen(_ menu: NSMenu) { awake.refresh() }
-    @objc private func flip() { awake.toggle(to: !awake.on) }
+    @objc private func flip() { awake.toggle(to: !(awake.on ?? false)) }
 }
