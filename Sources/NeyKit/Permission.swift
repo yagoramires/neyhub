@@ -18,6 +18,9 @@ public enum Permission: String, Codable, CaseIterable {
         }
     }
 
+    /// Só alguns usos do app precisam (o Microfone do Capture): tem linha em Permissões, mas não acende o ponto.
+    public var isOptional: Bool { self == .microphone }
+
     public var settingsURL: URL {
         switch self {
         case .accessibility: URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!

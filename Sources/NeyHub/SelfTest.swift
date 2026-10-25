@@ -144,6 +144,15 @@ enum SelfTest {
         precondition(model.missingPermission)
         model.granted[.notifications] = nil; model.installed["a"] = nil; model.granted[.screenRecording] = false
         precondition(!model.missingPermission)                                       // negada, mas ninguém usa
+        // Microfone (opcional, só o Capture com "Gravar o microfone"): tem linha na tela, mas não acende o ponto.
+        model.installed["c"] = manifest("c", #"["screenRecording","microphone"]"#)
+        precondition(model.permissionUsers.contains { $0.permission == .microphone && $0.apps == ["c"] }, "sem linha do Microfone")
+        precondition(Permission.allCases.filter(\.isOptional) == [.microphone])
+        model.granted = [.accessibility: true, .screenRecording: true, .microphone: false]
+        precondition(!model.missingPermission, "só o Microfone falta: o ponto não acende")
+        model.granted[.screenRecording] = false
+        precondition(model.missingPermission)
+        model.installed["c"] = nil; model.granted = [:]
 
         let bridge = HostBridge()
         var opened = 0

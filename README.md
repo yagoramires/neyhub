@@ -40,7 +40,7 @@ A tela lista só as permissões que algum app instalado usa:
 - **Acessibilidade**: para o Aero mover e redimensionar janelas e para as teclas de atalho e de mídia do Deck.
 - **Notificações**: para os lembretes do Dose e os avisos do Pauta. Os avisos de todos os apps passam pelo NeyHub, e o toque leva ao app (mesmo quando o toque é que abre o NeyHub).
 - **Gravação de Tela**: para o Capture.
-- **Microfone**: opcional, só para o Capture com **Gravar o microfone** ligado. O próprio Capture avisa quando falta.
+- **Microfone**: só para o Capture com **Gravar o microfone** ligado. Aparece como **opcional** e não acende o ponto da barra lateral; o próprio Capture avisa quando falta.
 - **Rede local**: para o Hub achar e controlar a Android TV. Não aparece na tela: o macOS pergunta sozinho na primeira vez que o Hub procura a TV.
 
 Nenhum app pede permissão no meio do uso: quando falta, ele mostra o aviso e leva para essa tela. Um ponto ao lado de **Permissões** na barra lateral avisa que falta alguma.

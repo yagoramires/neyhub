@@ -13,8 +13,8 @@ extension HubModel {
         }
     }
 
-    /// Ponto na sidebar: alguma permissão usada por um app instalado foi consultada e está negada.
-    var missingPermission: Bool { permissionUsers.contains { granted[$0.permission] == false } }
+    /// Ponto na sidebar: alguma permissão não opcional usada por um app instalado foi consultada e está negada.
+    var missingPermission: Bool { permissionUsers.contains { !$0.permission.isOptional && granted[$0.permission] == false } }
 
     @MainActor func refreshPermissions() async {
         for (p, _) in permissionUsers {
@@ -53,7 +53,10 @@ struct PermissionsView: View {
         return GCard {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(p.title).font(.system(size: 13, weight: .semibold)).foregroundStyle(Grafite.strong)
+                    HStack(spacing: 6) {
+                        Text(p.title).font(.system(size: 13, weight: .semibold)).foregroundStyle(Grafite.strong)
+                        if p.isOptional { Text("opcional").font(.system(size: 10)).foregroundStyle(Grafite.label) }
+                    }
                     Text("Usada por " + apps.joined(separator: ", ")).font(.system(size: 11)).foregroundStyle(Grafite.muted)
                 }
                 Spacer()
