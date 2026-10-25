@@ -242,6 +242,21 @@ extension SelfTest {
         precondition(model.problems["local.falso.a"] == nil && registered == 1, "begin sem categorias")
         PluginHost.resume(model)
         precondition(a.starts == 1, "começou duas vezes")
+        // Pausado no início e desinstalado: sai dos pausados (mesmo sem o marcador de Remove/, não começa).
+        let (d, pd) = fake("local.falso.d")
+        PluginHost.pause(pd, model: model)
+        model.uninstall("local.falso.d")
+        try? fm.removeItem(at: root.appendingPathComponent("Remove/local.falso.d"))
+        PluginHost.resume(model)
+        precondition(d.starts == 0, "desinstalado começou")
+        // Baixar/atualizar com o plugin pausado: o "Pausado" fica, mesmo com erro (o resume depende dele).
+        let entry = CatalogEntry(id: "local.falso.e", name: "Falso", repo: "x/falso", summary: "", hasScreen: false)
+        model.problems[entry.id] = PluginHost.paused
+        model.latest[entry.id] = Release(version: "9.9.9", notes: "", page: URL(string: "https://e")!, assets: [:]) // sem asset: falha
+        model.update(entry)
+        let deadline = Date().addingTimeInterval(5)
+        while model.busy.contains(entry.id), Date() < deadline { RunLoop.main.run(until: Date().addingTimeInterval(0.02)) }
+        precondition(!model.busy.contains(entry.id) && model.problems[entry.id] == PluginHost.paused, "run() apagou o Pausado")
         // Parado em uso: nunca começa de novo; o card passa a pedir reinício.
         PluginHost.begin(pc, model: model)
         PluginHost.stopForConflict(pc, model: model)

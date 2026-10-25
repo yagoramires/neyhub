@@ -14,7 +14,7 @@ Cada app continua sendo um repositório separado e funciona sozinho, fora do Ney
 ## Instalar
 
 1. Baixe o `NeyHub-x.y.z.dmg` na [página de releases](https://github.com/yagoramires/neyhub/releases/latest) e arraste o **NeyHub.app** para **Aplicativos**.
-2. Abra o NeyHub. Ele é assinado com um certificado próprio, não com um certificado pago da Apple, então na primeira vez o macOS avisa que não conseguiu verificar o desenvolvedor. Clique com o botão direito no app → **Abrir**, ou vá em **Ajustes do Sistema → Privacidade e Segurança**, role até o fim e clique em **Abrir Mesmo Assim**. Só na primeira vez.
+2. Abra o NeyHub. Ele é assinado com um certificado próprio, não com um certificado pago da Apple, então na primeira vez o macOS avisa que não conseguiu verificar o desenvolvedor. Vá em **Ajustes do Sistema → Privacidade e Segurança**, role até o fim e clique em **Abrir Mesmo Assim**. No macOS 14 também dá para clicar com o botão direito no app → **Abrir** (a partir do macOS 15 esse atalho não libera mais o app). Só na primeira vez.
 3. Na **Loja**, clique em **Instalar** no card do app. O NeyHub baixa o pacote do GitHub, confere a assinatura e o app já começa a rodar.
 
 O NeyHub entra nos itens de login na primeira vez que abre e continua rodando quando você fecha a janela (os apps dele, como o Aero, precisam ficar ativos). Para sair de verdade: **NeyHub → Sair do NeyHub** (`⌘Q`). Abrir o NeyHub de novo com ele já aberto só traz a janela de volta.

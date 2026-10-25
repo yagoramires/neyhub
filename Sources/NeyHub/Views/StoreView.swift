@@ -71,13 +71,15 @@ extension HubModel {
     private func run(_ e: CatalogEntry, _ op: @escaping () async throws -> Void) {
         guard !busy.contains(e.id) else { return }
         busy.insert(e.id)
-        problems[e.id] = nil
+        // Erro velho de instalar/baixar sai; "Pausado" é estado do plugin e fica até ele voltar.
+        if ![PluginHost.paused, PluginHost.restartToResume].contains(problems[e.id]) { problems[e.id] = nil }
         Task.detached { [self] in
             let failure: String?
             do { try await op(); failure = nil } catch { failure = Self.text(error) }
             await MainActor.run {
                 self.busy.remove(e.id)
-                if let failure { self.problems[e.id] = failure } // sucesso não apaga o que o início do plugin anotou
+                // Sucesso não apaga o que o início do plugin anotou; "Pausado" ganha do erro (o resume depende dele).
+                if let failure, ![PluginHost.paused, PluginHost.restartToResume].contains(self.problems[e.id]) { self.problems[e.id] = failure }
                 self.reloadInstalled()
             }
         }
@@ -96,6 +98,7 @@ extension HubModel {
     /// Pausado ou que não carregou não está em `loaded`: só marca.
     @MainActor func uninstall(_ id: String) {
         if let p = loaded.first(where: { $0.manifest.id == id }) { PluginHost.uninstall(p, store: store, model: self) } else { store.markForRemoval(id: id) }
+        PluginHost.forget(id) // pausado não começa quando o avulso fechar
         staged[id] = nil
         problems[id] = nil // sem "Pausado" velho no card
         detail = nil

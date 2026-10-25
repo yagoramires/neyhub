@@ -114,13 +114,19 @@ enum PluginHost {
         }
     }
 
+    /// Desinstalado: sai dos pausados e dos parados.
+    static func forget(_ id: String) {
+        waiting[id] = nil
+        stopped.remove(id)
+    }
+
     /// Avulso do mesmo app aberto (o NeyHub nunca é o avulso de um plugin).
     static func conflict(id: String) -> NSRunningApplication? {
         NSRunningApplication.runningApplications(withBundleIdentifier: id).first { !$0.isTerminated }
     }
 
-    static let paused = "Pausado: avulso aberto"
-    static let restartToResume = "Pausado — reinicie o NeyHub para voltar"
+    nonisolated static let paused = "Pausado: avulso aberto"
+    nonisolated static let restartToResume = "Pausado — reinicie o NeyHub para voltar"
 
     /// Avulso que declara `NeyHubAware` no Info.plist mostra o próprio alerta (HubCheck) e sai: o NeyHub não mostra o dele.
     /// Contrato: só declare `NeyHubAware = true` num app que chama `HubCheck.leaveForHub` ao abrir; senão ninguém avisa
