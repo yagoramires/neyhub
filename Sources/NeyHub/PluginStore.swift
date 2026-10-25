@@ -30,6 +30,8 @@ final class PluginStore {
 
     private var removalIDs: Set<String> { Set((try? fm.contentsOfDirectory(atPath: dir("Remove").path)) ?? []) }
 
+    func isMarkedForRemoval(_ id: String) -> Bool { removalIDs.contains(id) }
+
     /// `Plugins/*.neyplugin` menos os marcados em `Remove/`.
     func installedFolders() -> [URL] {
         let removed = removalIDs

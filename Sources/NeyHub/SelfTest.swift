@@ -34,13 +34,6 @@ enum SelfTest {
         precondition(PluginHost.load(folder: dir.appendingPathComponent("nada.neyplugin")).failure == .manifest)
         precondition(PluginHost.dlopenCount == 1, "dlopen chamado para plugin rejeitado")
 
-        // Ponte host↔plugin atravessa as duas imagens; stopCount é lido por KVC (a classe mora no plugin).
-        let host = HostBridge()
-        p.plugin.start(host: host)
-        precondition(host.messages == ["Olá do plugin"])
-        p.plugin.stop()
-        precondition((p.plugin as AnyObject).value(forKey: "stopCount") as? Int == 1)
-
         // Mesmo arquivo (hardlink) sob outro id: recusado antes do dlopen, senão o entry rodaria de novo.
         let fm = FileManager.default
         let other = temp("link").appendingPathComponent("Outro.neyplugin")
@@ -53,7 +46,7 @@ enum SelfTest {
         hosting(p)
     }
 
-    /// Presença, tela embutida e desinstalar com o plugin `good` já carregado.
+    /// Início, presença, tela embutida e desinstalar com o plugin `good` já carregado (start/stop uma vez só).
     @MainActor static func hosting(_ p: LoadedPlugin) {
         let fm = FileManager.default
         precondition(PluginHost.problemText(.contractTooNew(2)) == "Precisa atualizar o NeyHub")
@@ -67,12 +60,30 @@ enum SelfTest {
         defer { try? fm.removeItem(at: root) }
         let store = PluginStore(root: root)
         let model = HubModel(store: store)
-        model.loaded = [p]
         func count(_ key: String) -> Int? { (p.plugin as AnyObject).value(forKey: key) as? Int }
+        func active() -> [String]? { try? JSONDecoder().decode([String].self, from: Data(contentsOf: root.appendingPathComponent("active.json"))) }
+
+        // Ponte host↔plugin atravessa as duas imagens; contadores lidos por KVC (a classe mora no plugin).
+        let host = HostBridge()
+        PluginHost.begin(p, model: model, host: host)
+        precondition(host.messages == ["Olá do plugin"] && model.loaded.map(\.manifest.id) == ["local.hello"])
+        precondition(active() == ["local.hello"], "active.json sem o iniciado")
+        precondition(count("menuBarCalls") == 1, "begin não aplicou a presença")
+
+        // Sem tela: pedir tela não liga a tela nem põe na sidebar (ícone escondido é permitido: o app segue rodando).
+        let noScreen = HubModel(store: store)
+        let m = p.manifest
+        let barManifest = try! JSONDecoder().decode(PluginManifest.self, from: Data(
+            #"{"id":"\#(m.id)","name":"\#(m.name)","version":"1.0.0","contract":1,"hasScreen":false,"permissions":[],"binary":"\#(m.binary)"}"#.utf8))
+        let bar = LoadedPlugin(manifest: barManifest, plugin: p.plugin, folder: p.folder)
+        noScreen.loaded = [bar]
+        PluginHost.apply(.init(screen: true, menuBar: false), to: bar, model: noScreen)
+        precondition(noScreen.presences[m.id] == Presence(screen: false, menuBar: false) && noScreen.sidebarApps.isEmpty)
+        precondition(count("menuBarCalls") == 2)
 
         PluginHost.apply(.init(screen: false, menuBar: true), to: p, model: model)
         precondition(model.sidebarApps.isEmpty, "só barra de menus não vai para a sidebar")
-        precondition(count("menuBarCalls") == 1)
+        precondition(count("menuBarCalls") == 3)
         PluginHost.apply(.init(screen: true, menuBar: true), to: p, model: model)
         precondition(model.sidebarApps.map(\.manifest.id) == ["local.hello"])
         let screen = model.screen(for: p)
@@ -80,11 +91,14 @@ enum SelfTest {
 
         model.route = .app("local.hello")
         PluginHost.uninstall(p, store: store, model: model)
-        precondition(count("stopCount") == 2)
+        precondition(count("stopCount") == 1)
         precondition(fm.fileExists(atPath: root.appendingPathComponent("Remove/local.hello").path))
         precondition(model.loaded.isEmpty && model.sidebarApps.isEmpty && model.route == .store)
-        let active = try? JSONDecoder().decode([String].self, from: Data(contentsOf: root.appendingPathComponent("active.json")))
-        precondition(active == [], "active.json não tirou o desinstalado")
+        precondition(active() == [], "active.json não tirou o desinstalado")
+        // Desinstalar de novo (já fora de `loaded`): não chama stop() outra vez e limpa o "Pausado" do card.
+        model.problems["local.hello"] = PluginHost.paused
+        model.uninstall("local.hello")
+        precondition(count("stopCount") == 1 && model.problems["local.hello"] == nil)
     }
 }
 

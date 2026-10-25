@@ -17,6 +17,8 @@ enum PluginHost {
     /// Quantas vezes chamamos dlopen (o selftest garante que plugin rejeitado não chega lá).
     private(set) static var dlopenCount = 0
     private static var launchObserver: NSKeyValueObservation?
+    /// ids com alerta de conflito aberto: um segundo lançamento do avulso não empilha outro.
+    private static var alerting: Set<String> = []
 
     static func load(folder: URL) -> Result<LoadedPlugin, LoadError> {
         guard let data = try? Data(contentsOf: folder.appendingPathComponent("manifest.json")),
@@ -72,9 +74,12 @@ enum PluginHost {
             case .failure(let e):
                 model.problems[PluginStore.manifest(at: folder)?.id ?? folder.lastPathComponent] = problemText(e)
             case .success(let p):
-                guard let other = conflict(id: p.manifest.id) else { begin(p, model: model, host: host); continue }
+                let id = p.manifest.id
+                guard let other = conflict(id: id) else { begin(p, model: model, host: host); continue }
                 offerClose(other, name: p.manifest.name) { closed in
-                    if closed { begin(p, model: model, host: host) } else { model.problems[p.manifest.id] = paused }
+                    // Durante a espera: outro avulso pode ter aberto ou a pessoa pode ter desinstalado.
+                    if store.isMarkedForRemoval(id) { return }
+                    if closed, conflict(id: id) == nil { begin(p, model: model, host: host) } else { model.problems[id] = paused }
                 }
             }
         }
@@ -88,7 +93,7 @@ enum PluginHost {
 
     static let paused = "Pausado: avulso aberto"
 
-    private static func begin(_ p: LoadedPlugin, model: HubModel, host: HostBridge) {
+    static func begin(_ p: LoadedPlugin, model: HubModel, host: HostBridge) {
         p.plugin.start(host: host)
         model.loaded.append(p)
         model.problems[p.manifest.id] = nil
@@ -108,11 +113,15 @@ enum PluginHost {
                 MainActor.assumeIsolated {
                     for app in apps {
                         guard let p = model.loaded.first(where: { $0.manifest.id == app.bundleIdentifier }) else { continue }
+                        let id = p.manifest.id
+                        guard alerting.insert(id).inserted else { continue }
                         offerClose(app, name: p.manifest.name) { closed in
-                            guard !closed else { return }
+                            alerting.remove(id)
+                            // Desinstalado enquanto isso já levou stop(): nunca duas vezes.
+                            guard !closed, model.loaded.contains(where: { $0.manifest.id == id }) else { return }
+                            drop(p, model: model) // tira do active.json antes do stop(): o HubCheck do avulso confere depois de responder
                             p.plugin.stop()
-                            drop(p, model: model)
-                            model.problems[p.manifest.id] = paused
+                            model.problems[id] = paused
                         }
                     }
                 }
@@ -128,7 +137,10 @@ enum PluginHost {
         alert.addButton(withTitle: "Fechar")
         alert.addButton(withTitle: "Agora não")
         NSApp.activate(ignoringOtherApps: true)
-        guard alert.runModal() == .alertFirstButtonReturn else { return done(false) }
+        let answer = alert.runModal()
+        // O avulso saiu sozinho (HubCheck) enquanto o alerta estava aberto: segue no NeyHub, qualquer que seja a resposta.
+        if app.isTerminated { return done(true) }
+        guard answer == .alertFirstButtonReturn else { return done(false) }
         app.terminate()
         waitExit(app, tries: 25, done: done)
     }

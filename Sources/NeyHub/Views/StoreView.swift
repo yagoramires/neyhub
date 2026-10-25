@@ -74,6 +74,7 @@ extension HubModel {
     @MainActor func uninstall(_ id: String) {
         if let p = loaded.first(where: { $0.manifest.id == id }) { PluginHost.uninstall(p, store: store, model: self) } else { store.markForRemoval(id: id) }
         staged[id] = nil
+        problems[id] = nil // sem "Pausado" velho no card
         detail = nil
         reloadInstalled()
     }
