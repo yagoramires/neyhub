@@ -11,6 +11,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var awakeItem: AwakeStatusItem?
     private var awakeSub: AnyCancellable?
     private var updateTimer: Timer?
+    /// URLs que chegaram antes de os plugins iniciarem (o login pode abrir o NeyHub): roteadas depois do `startAll`.
+    private(set) var pendingURLs: [URL] = []
+    private var started = false
+    /// Chamado uma vez por lote que nenhum plugin tratou (o selftest troca o alerta).
+    var onUnhandled: () -> Void = {
+        let alert = NSAlert()
+        alert.window.appearance = NSAppearance(named: .darkAqua)
+        alert.messageText = "Nenhum app esperava este login"
+        alert.informativeText = "Abra o app que pediu o login e tente de novo."
+        NSApp.activate()
+        alert.runModal()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = Self.mainMenu()
@@ -29,6 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             awakeItem = show ? (awakeItem ?? AwakeStatusItem(awake: model.awake)) : nil
         }
         PluginHost.startAll(model) // cada begin registra as categorias
+        finishStart()
         Task { await model.refreshPermissions() } // ponto da sidebar já no início
         startUpdates()
         showWhatsNew(applied)
@@ -48,14 +61,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls where !PluginHost.route(url, model: model) {
-            let alert = NSAlert()
-            alert.window.appearance = NSAppearance(named: .darkAqua)
-            alert.messageText = "Nenhum app esperava este login"
-            alert.informativeText = "Abra o app que pediu o login e tente de novo."
-            NSApp.activate()
-            alert.runModal()
-        }
+        if started { handle(urls) } else { pendingURLs += urls }
+    }
+
+    @MainActor func finishStart() {
+        started = true
+        let urls = pendingURLs; pendingURLs = []
+        handle(urls)
+    }
+
+    /// Um alerta por lote, não um por URL; todas as URLs são roteadas.
+    @MainActor func handle(_ urls: [URL]) {
+        if !urls.filter({ !PluginHost.route($0, model: model) }).isEmpty { onUnhandled() }
     }
 
     func windowWillClose(_ notification: Notification) {

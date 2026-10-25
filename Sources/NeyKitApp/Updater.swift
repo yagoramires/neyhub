@@ -177,8 +177,8 @@ public final class Updater {
     public static func isSafeToApply(staged: String, current: String) -> Bool { Release.isNewer(staged, than: current) }
 
     /// Patch note da versão que acabou de entrar, uma vez só. Apaga `Update/` quando não há mais nada a aplicar.
-    public static func notesAfterUpdate(id: String, current: String) -> String? {
-        let defaults = AppDefaults.forApp(id)
+    public static func notesAfterUpdate(id: String, current: String, defaults: UserDefaults? = nil) -> String? {
+        let defaults = defaults ?? AppDefaults.forApp(id)
         guard defaults.string(forKey: "lastRunVersion") != current else { return nil }
         defaults.set(current, forKey: "lastRunVersion")
         let dir = updateDir(id)

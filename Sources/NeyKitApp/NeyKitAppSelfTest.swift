@@ -40,13 +40,11 @@ public enum NeyKitAppSelfTest {
 
         let root = temp("updater")
         let saved = (Updater.supportRoot, Updater.currentApp)
-        let std = UserDefaults.standard, oldRun = std.object(forKey: "lastRunVersion")
         let tempID = "neyhub.selftest.updater"
         defer {
             (Updater.supportRoot, Updater.currentApp) = saved
             try? fm.removeItem(at: root)
             AppDefaults.forApp(tempID).removePersistentDomain(forName: tempID)
-            if let oldRun { std.set(oldRun, forKey: "lastRunVersion") } else { std.removeObject(forKey: "lastRunVersion") }
         }
         Updater.supportRoot = root
 
@@ -159,10 +157,10 @@ public enum NeyKitAppSelfTest {
         precondition(u.staged == nil && !u.applyStaged())
 
         // Dentro do .app (id do processo → UserDefaults.standard) as novidades saem uma vez.
-        std.removeObject(forKey: "lastRunVersion") // o NeyHub real já gravou a versão dele; o defer acima restaura
-        precondition(Updater.notesAfterUpdate(id: "local.neyhub", current: myVersion) == "### Novo")
-        precondition(Updater.notesAfterUpdate(id: "local.neyhub", current: myVersion) == nil)
-        precondition(std.string(forKey: "lastRunVersion") == myVersion)
+        let iso = AppDefaults.forApp(tempID) // suíte isolada: nunca as defaults reais do NeyHub
+        precondition(Updater.notesAfterUpdate(id: "local.neyhub", current: myVersion, defaults: iso) == "### Novo")
+        precondition(Updater.notesAfterUpdate(id: "local.neyhub", current: myVersion, defaults: iso) == nil)
+        precondition(iso.string(forKey: "lastRunVersion") == myVersion)
     }
 
     static func hubCheck() {

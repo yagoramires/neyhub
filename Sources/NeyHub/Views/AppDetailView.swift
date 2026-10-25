@@ -55,7 +55,7 @@ struct AppDetailView: View {
             .padding(.bottom, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .task { if notes == nil { notes = await Catalog.releases(repo: entry.repo) } }
+        .task { if notes == nil, !entry.soon { notes = await Catalog.releases(repo: entry.repo) } }
     }
 
     @ViewBuilder private var releaseNotes: some View {

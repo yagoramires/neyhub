@@ -82,6 +82,7 @@ PY
   BINARY=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["binary"])' "$PLG/manifest.json")
   cp "$BIN" "$PLG/$BINARY"
   [[ -f Resources/AppIcon.icns ]] && cp Resources/AppIcon.icns "$PLG/icon.icns"
+  # Resources/ do .neyplugin fica fora da assinatura (só o dylib é assinado), como o manifest.json.
   if [[ -d $BUNDLE ]]; then mkdir -p "$PLG/Resources"; ditto "$BUNDLE" "$PLG/Resources"; fi
   codesign --force --sign "$IDENTITY" --timestamp=none "$PLG/$BINARY"
   codesign -v -R "=$LEAF" "$PLG/$BINARY" || { echo "✗ $PLG/$BINARY não passa no requisito fixo: o NeyHub recusaria" >&2; exit 1; }

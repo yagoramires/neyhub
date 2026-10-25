@@ -216,7 +216,11 @@ struct StoreAction: View {
     var body: some View {
         switch model.action(entry) {
         case .busy: ProgressView().controlSize(.small).accessibilityLabel(model.status(entry))
-        case .soon: GPill(title: "Em breve", style: .ghost) {}.disabled(true).opacity(0.5).accessibilityLabel("\(entry.name), em breve")
+        case .soon:
+            Text("Em breve").font(.system(size: 10, weight: .bold)).foregroundStyle(Grafite.muted)
+                .padding(.horizontal, 9).padding(.vertical, 4)
+                .overlay(Capsule().stroke(Grafite.ghostBorder, lineWidth: 1))
+                .accessibilityLabel("\(entry.name), em breve")
         case .install: GPill(title: "Instalar") { model.install(entry) }.accessibilityLabel("Instalar \(entry.name)")
         case .update: GPill(title: "Atualizar") { model.update(entry) }.accessibilityLabel("Atualizar \(entry.name)")
         case .open: GPill(title: "Abrir", style: .ghost) { open() }.accessibilityLabel("Abrir \(entry.name)")
@@ -238,20 +242,13 @@ struct StoreCard: View {
         GCard {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 8) {
-                    Button { model.detail = entry.id } label: {
-                        HStack(spacing: 8) {
-                            AppIcon(name: entry.name, id: entry.id, size: 26)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(entry.name).font(.system(size: 11, weight: .bold)).foregroundStyle(Grafite.strong)
-                                Text(model.status(entry)).font(.system(size: 11)).foregroundStyle(Grafite.muted).lineLimit(1)
-                            }
-                            Spacer(minLength: 0)
-                        }
-                        .contentShape(Rectangle())
+                    // "Em breve" não tem release: sem detalhe (que consultaria o GitHub).
+                    if entry.soon { header } else {
+                        Button { model.detail = entry.id } label: { header.contentShape(Rectangle()) }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("\(entry.name), \(model.status(entry))")
+                            .accessibilityHint("Abre os detalhes")
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(entry.name), \(model.status(entry))")
-                    .accessibilityHint("Abre os detalhes")
                     StoreAction(model: model, entry: entry)
                 }
                 if model.installed[entry.id] != nil {
@@ -264,6 +261,17 @@ struct StoreCard: View {
                 }
                 if let problem = model.problems[entry.id] { ProblemText(problem, model: model).padding(.top, 6) }
             }
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 8) {
+            AppIcon(name: entry.name, id: entry.id, size: 26)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(entry.name).font(.system(size: 11, weight: .bold)).foregroundStyle(Grafite.strong)
+                Text(model.status(entry)).font(.system(size: 11)).foregroundStyle(Grafite.muted).lineLimit(1)
+            }
+            Spacer(minLength: 0)
         }
     }
 

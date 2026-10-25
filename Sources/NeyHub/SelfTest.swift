@@ -104,6 +104,15 @@ enum SelfTest {
         precondition(PluginHost.route(URL(string: "hubmac://callback?code=x")!, model: model))
         precondition(!PluginHost.route(URL(string: "hubmac://outro?code=x")!, model: model))
         precondition(!PluginHost.route(URL(string: "hubmac://callback?code=x")!, model: HubModel()), "sem plugins carregados")
+        // URL que chega antes do startAll espera e é roteada depois, sem alerta; lote sem aceitante alerta uma vez só.
+        let delegate = AppDelegate(); delegate.model.loaded = model.loaded
+        var alerts = 0; delegate.onUnhandled = { alerts += 1 }
+        delegate.application(NSApp, open: [URL(string: "hubmac://callback?code=x")!])
+        precondition(delegate.pendingURLs.count == 1 && alerts == 0)
+        delegate.finishStart()
+        precondition(delegate.pendingURLs.isEmpty && alerts == 0, "URL na fila deveria ser roteada")
+        delegate.application(NSApp, open: [URL(string: "hubmac://x")!, URL(string: "hubmac://y")!])
+        precondition(alerts == 1, "um alerta por lote")
         precondition(PluginHost.load(folder: good).failure == .alreadyLoaded && PluginHost.load(folder: p.folder).failure == .alreadyLoaded)
         precondition(PluginHost.load(folder: folder("adhoc")).failure == .signature)
         precondition(PluginHost.load(folder: folder("tampered")).failure == .signature)
