@@ -220,6 +220,21 @@ enum PluginHost {
         if !p.screen, model.route == .app(id) { model.route = .store; model.detail = id }
     }
 
+    /// Sair do NeyHub: `stop()` em cada plugin iniciado, uma vez só. Pausados nunca começaram e os parados por
+    /// conflito já saíram de `loaded`. Um `stop()` pode demorar (o Capture espera até ~5 s a gravação fechar).
+    /// Exceção ObjC ou crash dentro do plugin não dá para pegar daqui: o log diz em qual parou.
+    static func stopAll(_ model: HubModel) {
+        let all = model.loaded
+        model.loaded = []
+        for p in all {
+            let begin = Date()
+            NSLog("NeyHub: parando \(p.manifest.id) ao sair")
+            p.plugin.stop()
+            let took = Date().timeIntervalSince(begin)
+            if took > 1 { NSLog("NeyHub: \(p.manifest.id) levou \(String(format: "%.1f", took)) s para parar") }
+        }
+    }
+
     static func uninstall(_ p: LoadedPlugin, store: PluginStore, model: HubModel) {
         p.plugin.stop()
         store.markForRemoval(id: p.manifest.id)

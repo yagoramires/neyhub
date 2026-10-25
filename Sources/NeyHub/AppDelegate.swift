@@ -5,7 +5,7 @@ import NeyKitApp
 import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
-    let model = HubModel()
+    let model: HubModel
     private lazy var notifications = Notifications(model: model)
     private var window: NSWindow?
     private var awakeItem: AwakeStatusItem?
@@ -22,6 +22,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         alert.informativeText = "Abra o app que pediu o login e tente de novo."
         NSApp.activate()
         alert.runModal()
+    }
+
+    /// O selftest passa um modelo com pasta temporária (o padrão é a pasta real do NeyHub).
+    init(model: HubModel = HubModel()) {
+        self.model = model
+        super.init()
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -49,6 +55,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        PluginHost.stopAll(model) // ex.: gravação do Capture fecha o arquivo como no ⌃⌘Esc
         _ = model.updater?.applyStaged() // fechar normalmente também instala o que já foi baixado
         try? FileManager.default.removeItem(at: PluginHost.activeURL(model.store)) // ausente já é o estado certo
     }

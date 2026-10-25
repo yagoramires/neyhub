@@ -279,6 +279,18 @@ extension SelfTest {
         PluginHost.resume(model)
         precondition(c.starts == 1 && model.problems["local.falso.c"] == PluginHost.restartToResume, "parado não pediu reinício")
 
+        // Sair: stop() uma vez em cada iniciado; parado por conflito e pausado não recebem outro.
+        let (f, pf) = fake("local.falso.f")
+        PluginHost.pause(pf, model: model)
+        fm.createFile(atPath: PluginHost.activeURL(model.store).path, contents: Data("[]".utf8))
+        let quitting = AppDelegate(model: model)
+        quitting.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+        precondition(a.stops == 1 && c.stops == 1 && f.stops == 0 && b.stops == 0 && d.stops == 0, "stop ao sair: a=\(a.stops) c=\(c.stops)")
+        precondition(model.loaded.isEmpty && !fm.fileExists(atPath: PluginHost.activeURL(model.store).path))
+        quitting.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+        precondition(a.stops == 1, "stop duas vezes")
+        PluginHost.forget("local.falso.f")
+
         // Manifest ilegível: problema pelo nome da pasta, card próprio, Remover apaga sem carregar nada.
         let dl = PluginHost.dlopenCount
         let bad = root.appendingPathComponent("Plugins/Quebrado.neyplugin")
