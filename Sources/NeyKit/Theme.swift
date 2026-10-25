@@ -23,7 +23,7 @@ public enum Grafite {
     /// "#rrggbb" ou "rrggbb"; qualquer outra coisa devolve nil.
     public static func color(hex string: String) -> Color? {
         let digits = string.hasPrefix("#") ? String(string.dropFirst()) : string
-        guard digits.count == 6, let value = UInt32(digits, radix: 16) else { return nil }
+        guard digits.count == 6, digits.allSatisfy(\.isHexDigit), let value = UInt32(digits, radix: 16) else { return nil }
         return Color(red: Double(value >> 16 & 255) / 255, green: Double(value >> 8 & 255) / 255, blue: Double(value & 255) / 255)
     }
 
@@ -58,6 +58,7 @@ public struct GPill: View {
                 .padding(.horizontal, 9).padding(.vertical, 4)
                 .background(style == .primary ? Grafite.accent : .clear, in: Capsule())
                 .overlay(Capsule().stroke(style == .primary ? .clear : Grafite.ghostBorder, lineWidth: 1))
+                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
     }
@@ -66,7 +67,8 @@ public struct GPill: View {
 /// Interruptor desenhado à mão: cápsula 26x15, bolinha 11.
 public struct GSwitch: View {
     @Binding private var isOn: Bool
-    public init(isOn: Binding<Bool>) { _isOn = isOn }
+    private let label: String
+    public init(isOn: Binding<Bool>, label: String) { _isOn = isOn; self.label = label }
     public var body: some View {
         Capsule()
             .fill(isOn ? Grafite.accent : Grafite.ghostBorder)
@@ -75,7 +77,14 @@ public struct GSwitch: View {
                 Circle().fill(isOn ? Grafite.onAccent : Grafite.ghostText).frame(width: 11, height: 11).padding(2)
             }
             .animation(.easeOut(duration: 0.12), value: isOn)
+            .padding(6)
+            .contentShape(Rectangle())
             .onTapGesture { isOn.toggle() }
+            .accessibilityElement()
+            .accessibilityLabel(label)
+            .accessibilityValue(isOn ? "Ligado" : "Desligado")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { isOn.toggle() }
     }
 }
 

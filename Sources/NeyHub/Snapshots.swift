@@ -16,14 +16,14 @@ enum Snapshots {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Dose").font(.system(size: 16, weight: .semibold)).foregroundStyle(Grafite.strong)
                             Text("Remédios no menu").font(.system(size: 11)).foregroundStyle(Grafite.muted)
-                            HStack { GPill(title: "Ativo"); GPill(title: "Remover", style: .ghost); Spacer(); GSwitch(isOn: $on) }
+                            HStack { GPill(title: "Ativo"); GPill(title: "Remover", style: .ghost); Spacer(); GSwitch(isOn: $on, label: "Dose") }
                         }
                     }
                     GCard {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Aero").font(.system(size: 16, weight: .semibold)).foregroundStyle(Grafite.strong)
                             Text("Janelas").font(.system(size: 11)).foregroundStyle(Grafite.muted)
-                            HStack { GPill(title: "Instalar"); Spacer(); GSwitch(isOn: $off) }
+                            HStack { GPill(title: "Instalar"); Spacer(); GSwitch(isOn: $off, label: "Aero") }
                         }
                     }
                 }
