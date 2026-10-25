@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Deck · mockup</title>
+<style>
+:root{--bg:#121315;--side:#0f1012;--card:#1a1b1f;--line:#26282e;--txt:#d6d8dd;--muted:#8a8d96;--acc:#c6ff3d;--warn:#ffb03d}
+*{box-sizing:border-box}body{margin:0;background:#0b0c0d;color:var(--txt);font:12px -apple-system,"SF Pro Text",Inter,sans-serif;padding:28px;display:flex;flex-direction:column;gap:28px;align-items:flex-start}
+h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.win{width:980px;height:600px;display:flex;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg)}
+.side{width:190px;background:var(--side);border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:2px}
+.brand{font-weight:800;font-size:14px;color:#fff;margin:0 6px 14px}.brand b{color:var(--acc)}
+.nav{padding:6px 8px;border-radius:7px;color:var(--muted)}.nav.on{background:#1d1f24;color:#fff}
+.sec{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#5d6068;margin:14px 8px 4px}
+.awake{margin-top:auto;background:#1c2410;border:1px solid #3c5214;border-radius:9px;padding:7px 9px;color:var(--acc)}
+.main{flex:1;padding:20px 22px;display:flex;flex-direction:column;min-width:0}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.top h1{font-size:18px;color:#fff;margin:0}.st{display:flex;align-items:center;gap:6px;color:var(--muted)}.st i{width:7px;height:7px;border-radius:50%;background:var(--acc)}
+.pager{margin-left:auto;display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:3px}
+.pager span{padding:3px 9px;border-radius:6px;color:var(--muted)}.pager .on{background:#2a2d33;color:#fff}
+.g{font-size:11px;color:var(--muted);padding:5px 10px;border-radius:7px;background:var(--card);border:1px solid var(--line)}
+.cols{display:grid;grid-template-columns:1fr 300px;gap:14px;flex:1;min-height:0}
+.deck{background:#0c0d0f;border:1px solid var(--line);border-radius:16px;padding:18px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-content:center}
+.k{aspect-ratio:1;border-radius:12px;background:#17181c;border:1px solid #2a2c32;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:10px;color:var(--muted);position:relative}
+.k i{font-style:normal;font-size:26px}.k.sel{outline:2px solid var(--acc);outline-offset:2px}.k.e{border-style:dashed;color:#45474e}
+.k b{color:#fff;font-weight:600}.k small{position:absolute;top:5px;right:7px;font-size:9px;color:#5d6068}
+.card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px}
+.lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:10px 0 6px}
+.list{display:flex;flex-direction:column;gap:3px}.list span{padding:5px 8px;border-radius:6px;color:var(--muted)}.list .on{background:#22252b;color:#fff;box-shadow:inset 2px 0 var(--acc)}
+.field{background:#121316;border:1px solid var(--line);border-radius:7px;padding:7px 9px;color:#fff;display:flex;align-items:center}.field em{margin-left:auto;font-style:normal;color:var(--acc);font-size:11px}
+.icon{display:flex;gap:10px;align-items:center}.drop{width:58px;height:58px;border-radius:11px;border:1px dashed #3a3d44;display:flex;align-items:center;justify-content:center;font-size:24px}
+.sw{margin-left:auto;width:26px;height:15px;border-radius:8px;background:var(--acc);position:relative}.sw:after{content:"";position:absolute;right:2px;top:2px;width:11px;height:11px;border-radius:50%;background:#111}
+.foot{display:flex;gap:8px;margin-top:12px}
+.warn{background:#2a2110;border:1px solid #5a4416;color:var(--warn);border-radius:9px;padding:8px 10px;margin-bottom:12px}
+.note{color:var(--muted);max-width:980px;line-height:1.55}
+</style></head><body>
+
+<div>
+<h2>Tela do Deck dentro do NeyHub</h2>
+<div class="win">
+  <div class="side">
+    <div class="brand">ney<b>hub</b></div>
+    <div class="nav">Loja</div><div class="nav">Permissões</div>
+    <div class="sec">Instalados</div><div class="nav">● Dose</div><div class="nav on">● Deck</div>
+    <div class="awake">☾ Acordado</div>
+  </div>
+  <div class="main">
+    <div class="top">
+      <h1>Deck</h1><span class="st"><i></i>D6 conectado</span>
+      <div class="pager"><span>‹</span><span class="on">Página 1</span><span>2</span><span>3</span><span>›</span><span>+</span></div>
+    </div>
+    <div class="cols">
+      <div style="display:flex;flex-direction:column;min-height:0">
+        <div class="deck">
+          <div class="k"><i>🎵</i><b>Spotify</b><small>1</small></div>
+          <div class="k sel"><i>💬</i><b>Slack</b><small>2</small></div>
+          <div class="k"><i>🌐</i><b>Jira</b><small>3</small></div>
+          <div class="k"><i>⏯</i><b>Play</b><small>4</small></div>
+          <div class="k"><i>🎧</i><b>Fone ↔ Caixa</b><small>5</small></div>
+          <div class="k"><i>⌘</i><b>⇧⌘4</b><small>6</small></div>
+          <div class="k"><i>🖥</i><b>Terminal</b><small>7</small></div>
+          <div class="k e">+<small>8</small></div>
+          <div class="k"><i>🔉</i><b>Vol −</b><small>9</small></div>
+          <div class="k"><i>🔊</i><b>Vol +</b><small>10</small></div>
+          <div class="k e">+<small>11</small></div>
+          <div class="k e">+<small>12</small></div>
+          <div class="k e">+<small>13</small></div>
+          <div class="k"><i>◀</i><b>Página</b><small>14</small></div>
+          <div class="k"><i>▶</i><b>Página</b><small>15</small></div>
+        </div>
+        <div class="foot">
+          <span class="g">Importar do app da fifine…</span>
+          <span class="g">Apagar página</span>
+          <span style="margin-left:auto;color:var(--muted);font-size:11px;align-self:center">Arraste uma tecla pra trocar de lugar · solte uma imagem pra virar ícone</span>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center"><b style="color:#fff;font-size:13px">Tecla 2</b><span style="margin-left:auto;color:var(--muted);font-size:11px">página 1</span></div>
+        <div class="lbl">Ação</div>
+        <div class="list"><span>Nada</span><span class="on">Abrir app</span><span>Abrir site</span><span>Atalho de teclado</span><span>Tecla de mídia</span><span>Alternar saída de áudio</span><span>Próxima página</span><span>Página anterior</span></div>
+        <div class="lbl">App</div>
+        <div class="field">Slack.app<em>Escolher…</em></div>
+        <div class="lbl">Ícone e rótulo</div>
+        <div class="icon"><div class="drop">💬</div><div style="flex:1"><div class="field" style="margin-bottom:6px">Slack</div><div style="display:flex;align-items:center;color:var(--muted)">Estilo neon<span class="sw"></span></div></div></div>
+        <div class="foot"><span class="g">Limpar tecla</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div>
+<h2>Estados</h2>
+<div style="display:flex;gap:16px">
+  <div class="card" style="width:330px"><div class="warn">O app da fifine está aberto e segurando o deck. <b>Fechar o app da fifine</b></div><div class="note">Igual ao aviso de hoje, no topo da tela.</div></div>
+  <div class="card" style="width:330px"><div class="st" style="margin-bottom:8px"><i style="background:#5d6068"></i>D6 desconectado</div><div class="note">A grade continua editável; as teclas vão pro D6 quando ele voltar.</div></div>
+</div>
+</div>
+
+<p class="note"><b style="color:#fff">O que é:</b> a mesma coisa do popover, em tamanho grande — o D6 desenhado com as 15 teclas na posição real (3×5), páginas em abas no topo, e o editor da tecla escolhida sempre aberto ao lado (no popover ele abre por cima). Mesmas ações, mesmo arrastar-pra-trocar e soltar-imagem, mesmo importar do app da fifine. O popover da barra continua igual, só no Grafite.</p>
+</body></html>
