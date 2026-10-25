@@ -18,5 +18,8 @@
   </dict></array>
   <key>NSMicrophoneUsageDescription</key><string>Para o Capture gravar o áudio do microfone junto com a tela.</string>
   <key>NSLocalNetworkUsageDescription</key><string>Para o Hub achar a Android TV na rede.</string>
+  <!-- Os mesmos tipos que o Hub procura: a TCL, por exemplo, só anuncia AirPlay, HomeKit e Cast. -->
+  <key>NSBonjourServices</key>
+  <array><string>_androidtvremote2._tcp</string><string>_googlecast._tcp</string><string>_airplay._tcp</string><string>_hap._tcp</string></array>
 </dict>
 </plist>
