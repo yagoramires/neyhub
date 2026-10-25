@@ -47,6 +47,13 @@ rm -f "dist/$NAME-$V".*
 scripts/build.sh release --dist
 APP="build/$NAME.app"
 ASSETS=("dist/$NAME-$V.zip")
+# Resources/Bundle/ (fontes, logos...) vai para o .app e, mais abaixo, para o plugin. O build.sh já assinou e zipou: reassina e refaz o zip.
+BUNDLE=Resources/Bundle
+if [[ -d $BUNDLE ]]; then
+  ditto "$BUNDLE" "$APP/Contents/Resources"
+  codesign --force --sign "$IDENTITY" --timestamp=none "$APP"
+  rm -f "dist/$NAME-$V.zip"; ditto -c -k --norsrc --keepParent "$APP" "dist/$NAME-$V.zip"
+fi
 BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" Resources/Info.plist)
 codesign -v --strict -R "=identifier \"$BUNDLE_ID\" and $LEAF" "$APP" || { echo "✗ $APP não passa no requisito fixo: o Updater recusaria" >&2; exit 1; }
 
@@ -75,6 +82,7 @@ PY
   BINARY=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["binary"])' "$PLG/manifest.json")
   cp "$BIN" "$PLG/$BINARY"
   [[ -f Resources/AppIcon.icns ]] && cp Resources/AppIcon.icns "$PLG/icon.icns"
+  if [[ -d $BUNDLE ]]; then mkdir -p "$PLG/Resources"; ditto "$BUNDLE" "$PLG/Resources"; fi
   codesign --force --sign "$IDENTITY" --timestamp=none "$PLG/$BINARY"
   codesign -v -R "=$LEAF" "$PLG/$BINARY" || { echo "✗ $PLG/$BINARY não passa no requisito fixo: o NeyHub recusaria" >&2; exit 1; }
   ditto -c -k --norsrc --keepParent "$PLG" "dist/$NAME-$V.neyplugin"

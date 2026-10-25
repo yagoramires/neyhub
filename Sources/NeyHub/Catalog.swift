@@ -2,7 +2,21 @@ import Foundation
 import NeyKit
 
 /// Uma linha do `catalog.json` (repo neyhub, branch main; cópia embutida no .app para abrir sem rede).
-struct CatalogEntry: Codable, Equatable { let id, name, repo, summary: String; let hasScreen: Bool }
+/// `soon` (opcional no JSON): card "Em breve", ainda sem release.
+struct CatalogEntry: Codable, Equatable {
+    let id, name, repo, summary: String; let hasScreen: Bool; var soon = false
+
+    init(id: String, name: String, repo: String, summary: String, hasScreen: Bool, soon: Bool = false) {
+        (self.id, self.name, self.repo, self.summary, self.hasScreen, self.soon) = (id, name, repo, summary, hasScreen, soon)
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(id: try c.decode(String.self, forKey: .id), name: try c.decode(String.self, forKey: .name), repo: try c.decode(String.self, forKey: .repo),
+                  summary: try c.decode(String.self, forKey: .summary), hasScreen: try c.decode(Bool.self, forKey: .hasScreen),
+                  soon: try c.decodeIfPresent(Bool.self, forKey: .soon) ?? false)
+    }
+}
 
 enum Catalog {
     static let remote = URL(string: "https://raw.githubusercontent.com/yagoramires/neyhub/main/catalog.json")!

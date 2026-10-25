@@ -16,7 +16,7 @@ extension HubModel {
         staged = store.stagedVersions() // applyPending que falhou deixa Staged/: o aviso de reiniciar volta
         Task.detached { [self] in
             if let fresh = await Catalog.refresh(cache: Self.catalogCache) { await MainActor.run { self.catalog = fresh } }
-            for e in await MainActor.run(body: { self.catalog }) {
+            for e in await MainActor.run(body: { self.catalog }) where !e.soon { // "Em breve" não tem release: sem chamada à API
                 if let r = await self.store.latest(e.repo) { await MainActor.run { self.latest[e.id] = r } }
             }
         }
@@ -27,7 +27,7 @@ extension HubModel {
         guard !checking else { return } // tique de 6 h não se sobrepõe a uma checagem lenta
         checking = true
         Task.detached { [self] in
-            for e in await MainActor.run(body: { self.catalog }) {
+            for e in await MainActor.run(body: { self.catalog }) where !e.soon {
                 // Card ocupado (instalar/atualizar à mão) fica de fora; o ciclo marca o card enquanto baixa.
                 guard await MainActor.run(body: { self.busy.insert(e.id).inserted }) else { continue }
                 let result = await store.checkUpdates([e])
@@ -159,7 +159,7 @@ struct StoreView: View {
     }
 
     private var subtitle: String {
-        let n = model.catalog.count
+        let n = model.catalog.filter { !$0.soon }.count
         let i = model.catalog.filter { model.installed[$0.id] != nil }.count
         let u = model.catalog.filter { model.hasUpdate($0) }.count
         var parts = ["\(n) \(n == 1 ? "app" : "apps")", "\(i) \(i == 1 ? "instalado" : "instalados")"]
@@ -168,7 +168,18 @@ struct StoreView: View {
     }
 }
 
+enum CardAction { case busy, soon, install, update, open, none }
+
 extension HubModel {
+    /// O que o card/detalhe oferece; "Em breve" nunca instala.
+    func action(_ e: CatalogEntry) -> CardAction {
+        if e.soon { return .soon }
+        if busy.contains(e.id) { return .busy }
+        if installed[e.id] == nil { return .install }
+        if hasUpdate(e) { return .update }
+        return detail == nil ? .open : .none
+    }
+
     /// Instalado, release mais nova no GitHub e ainda não preparada.
     func hasUpdate(_ e: CatalogEntry) -> Bool {
         guard let m = installed[e.id], let r = latest[e.id], staged[e.id] == nil else { return false }
@@ -203,14 +214,13 @@ struct StoreAction: View {
     let entry: CatalogEntry
 
     var body: some View {
-        if model.busy.contains(entry.id) {
-            ProgressView().controlSize(.small).accessibilityLabel(model.status(entry))
-        } else if model.installed[entry.id] == nil {
-            GPill(title: "Instalar") { model.install(entry) }.accessibilityLabel("Instalar \(entry.name)")
-        } else if model.hasUpdate(entry) {
-            GPill(title: "Atualizar") { model.update(entry) }.accessibilityLabel("Atualizar \(entry.name)")
-        } else if model.detail == nil {
-            GPill(title: "Abrir", style: .ghost) { open() }.accessibilityLabel("Abrir \(entry.name)")
+        switch model.action(entry) {
+        case .busy: ProgressView().controlSize(.small).accessibilityLabel(model.status(entry))
+        case .soon: GPill(title: "Em breve", style: .ghost) {}.disabled(true).opacity(0.5).accessibilityLabel("\(entry.name), em breve")
+        case .install: GPill(title: "Instalar") { model.install(entry) }.accessibilityLabel("Instalar \(entry.name)")
+        case .update: GPill(title: "Atualizar") { model.update(entry) }.accessibilityLabel("Atualizar \(entry.name)")
+        case .open: GPill(title: "Abrir", style: .ghost) { open() }.accessibilityLabel("Abrir \(entry.name)")
+        case .none: EmptyView()
         }
     }
 

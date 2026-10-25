@@ -23,6 +23,8 @@ public let neyPluginContractVersion = 1
     func makeSettings() -> NSViewController
     @objc optional func notificationCategories() -> Set<UNNotificationCategory>
     @objc optional func handleNotification(identifier: String, actionIdentifier: String)
+    /// URL `hubmac://…` que o NeyHub recebeu (retorno de login); true = este plugin tratou.
+    @objc optional func handleURL(_ url: URL) -> Bool
 }
 
 /// `<Nome>.neyplugin/manifest.json`.

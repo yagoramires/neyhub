@@ -8,6 +8,11 @@ final class HelloEntry: NSObject, NeyPlugin {
     @objc private(set) var stopCount = 0
     @objc private(set) var menuBarCalls = 0
 
+    @objc var locationVersion: String { PluginLocation.version(dso: #dsohandle) }
+    @objc var locationFolder: String? { PluginLocation.folder(dso: #dsohandle)?.path }
+    @objc var locationHasResources: Bool { PluginLocation.resources(dso: #dsohandle) != nil }
+    func handleURL(_ url: URL) -> Bool { url.scheme == "hubmac" && url.host == "callback" }
+
     var contractVersion: Int { 1 }
     func start(host: NeyHost) { host.log("Olá do plugin") }
     func stop() { stopCount += 1 }

@@ -47,6 +47,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return true
     }
 
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls where !PluginHost.route(url, model: model) {
+            let alert = NSAlert()
+            alert.window.appearance = NSAppearance(named: .darkAqua)
+            alert.messageText = "Nenhum app esperava este login"
+            alert.informativeText = "Abra o app que pediu o login e tente de novo."
+            NSApp.activate()
+            alert.runModal()
+        }
+    }
+
     func windowWillClose(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
     }

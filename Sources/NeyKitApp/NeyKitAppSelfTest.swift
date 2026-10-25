@@ -159,6 +159,7 @@ public enum NeyKitAppSelfTest {
         precondition(u.staged == nil && !u.applyStaged())
 
         // Dentro do .app (id do processo → UserDefaults.standard) as novidades saem uma vez.
+        std.removeObject(forKey: "lastRunVersion") // o NeyHub real já gravou a versão dele; o defer acima restaura
         precondition(Updater.notesAfterUpdate(id: "local.neyhub", current: myVersion) == "### Novo")
         precondition(Updater.notesAfterUpdate(id: "local.neyhub", current: myVersion) == nil)
         precondition(std.string(forKey: "lastRunVersion") == myVersion)

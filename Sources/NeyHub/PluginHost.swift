@@ -67,6 +67,13 @@ enum PluginHost {
         }
     }
 
+    // MARK: - Retorno de login
+
+    /// Entrega a URL `hubmac://…` aos plugins iniciados, na ordem de carga, até um tratar.
+    static func route(_ url: URL, model: HubModel) -> Bool {
+        model.loaded.contains { $0.plugin.handleURL?(url) ?? false }
+    }
+
     // MARK: - Início
 
     /// Chamar depois do `applyPending`. Avulso aberto pergunta antes; quem não carrega ganha o motivo no card.

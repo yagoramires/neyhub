@@ -98,6 +98,12 @@ enum SelfTest {
         let p = model.loaded[0]
         precondition(p.plugin.contractVersion == 1 && p.plugin.makeScreen() != nil)
         precondition(PluginHost.dlopenCount == 1)
+        precondition((p.plugin as AnyObject).value(forKey: "locationVersion") as? String == "1.0.0", "PluginLocation.version")
+        precondition(((p.plugin as AnyObject).value(forKey: "locationFolder") as? String).map({ URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }) == p.folder.resolvingSymlinksInPath().path, "PluginLocation.folder")
+        precondition((p.plugin as AnyObject).value(forKey: "locationHasResources") as? Bool == false)
+        precondition(PluginHost.route(URL(string: "hubmac://callback?code=x")!, model: model))
+        precondition(!PluginHost.route(URL(string: "hubmac://outro?code=x")!, model: model))
+        precondition(!PluginHost.route(URL(string: "hubmac://callback?code=x")!, model: HubModel()), "sem plugins carregados")
         precondition(PluginHost.load(folder: good).failure == .alreadyLoaded && PluginHost.load(folder: p.folder).failure == .alreadyLoaded)
         precondition(PluginHost.load(folder: folder("adhoc")).failure == .signature)
         precondition(PluginHost.load(folder: folder("tampered")).failure == .signature)
@@ -304,9 +310,17 @@ extension SelfTest {
         let repoCatalog = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../catalog.json")
         let bundled = Bundle.main.url(forResource: "catalog", withExtension: "json") ?? repoCatalog
         let entries = Catalog.decode(try! Data(contentsOf: bundled))!
-        precondition(entries.count == 2)
+        precondition(entries.map(\.id) == ["local.aero", "local.dose", "local.capture", "local.deck", "local.pauta", "local.hub"])
         precondition(entries[0] == CatalogEntry(id: "local.aero", name: "Aero", repo: "yagoramires/aero", summary: "Encaixe de janelas estilo Windows", hasScreen: false))
         precondition(entries[1] == CatalogEntry(id: "local.dose", name: "Dose", repo: "yagoramires/dose", summary: "Remédios e suplementos do dia", hasScreen: true))
+        precondition(entries.map(\.soon) == [false, false, true, true, true, true])
+        precondition(entries[2] == CatalogEntry(id: "local.capture", name: "Capture", repo: "yagoramires/capture", summary: "Prints e gravação de tela pela barra de menus", hasScreen: false, soon: true))
+        precondition(entries[3].summary == "Controle do fifine AmpliGame D6" && entries[4].summary == "Slack, GitHub e Jira num lugar só")
+        precondition(entries[5].summary == "Casa conectada: Tuya, SmartThings e Android TV" && entries[3...5].allSatisfy(\.hasScreen))
+        precondition(entries[2...5].map(\.repo) == ["yagoramires/capture", "yagoramires/deck", "yagoramires/pauta", "yagoramires/hub"])
+        // Cartão "Em breve" não oferece Instalar nem consulta releases.
+        let model = HubModel()
+        precondition(model.action(entries[0]) == .install && model.action(entries[2]) == .soon)
         let cache = dir.appendingPathComponent("catalog.json")
         precondition(Catalog.load(cache: cache, bundled: bundled) == entries, "sem cache → embutido")
         try! Data("{".utf8).write(to: cache)
@@ -317,6 +331,8 @@ extension SelfTest {
         let mixed = Catalog.decode(Data(#"[{"id":"../x","name":"X","repo":"a/x","summary":"","hasScreen":true},{"id":"local.y","name":"Y","repo":"a/y?x=1","summary":"","hasScreen":true},{"id":"local.z","name":"Z","repo":"a/z","summary":"","hasScreen":false}]"#.utf8))!
         precondition(mixed.map(\.id) == ["local.z"])
         precondition(Catalog.decode(Data("{".utf8)) == nil)
+        precondition(Catalog.decode(Data(#"[{"id":"local.s","name":"S","repo":"a/s","summary":"","hasScreen":true,"soon":true}]"#.utf8))!.map(\.soon) == [true])
+        precondition(Catalog.decode(Data(#"[{"id":"local.s","name":"S","repo":"a/s","summary":"","hasScreen":true}]"#.utf8))!.map(\.soon) == [false])
 
         let list = Catalog.parseReleases(Data(####"[{"tag_name":"v0.5.1","html_url":"https://e/1","body":"### Corrigido\n- **b**"},{"tag_name":"v0.5.0","html_url":"https://e/0","body":"a"},{"x":1}]"####.utf8))
         precondition(list.map(\.version) == ["0.5.1", "0.5.0"])

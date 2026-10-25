@@ -11,5 +11,12 @@
   <key>CFBundleVersion</key><string>1</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
+  <key>CFBundleURLTypes</key>
+  <array><dict>
+    <key>CFBundleURLName</key><string>local.hub.oauth</string>
+    <key>CFBundleURLSchemes</key><array><string>hubmac</string></array>
+  </dict></array>
+  <key>NSMicrophoneUsageDescription</key><string>Para o Capture gravar o áudio do microfone junto com a tela.</string>
+  <key>NSLocalNetworkUsageDescription</key><string>Para o Hub achar a Android TV na rede.</string>
 </dict>
 </plist>

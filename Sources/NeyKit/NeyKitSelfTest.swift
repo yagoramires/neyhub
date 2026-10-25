@@ -19,7 +19,9 @@ public enum NeyKitSelfTest {
 
     static func permissions() {
         precondition(Permission(rawValue: "screenRecording")?.title == "Gravação de Tela")
-        precondition(Permission.allCases.map(\.title) == ["Acessibilidade", "Gravação de Tela", "Notificações"])
+        precondition(Permission(rawValue: "microphone")?.title == "Microfone")
+        precondition(Permission.microphone.settingsURL.absoluteString.hasSuffix("Privacy_Microphone"))
+        precondition(Permission.allCases.map(\.title) == ["Acessibilidade", "Gravação de Tela", "Notificações", "Microfone"])
         precondition(Permission.allCases.allSatisfy { $0.settingsURL.scheme == "x-apple.systempreferences" })
         precondition(Permission.screenRecording.settingsURL.absoluteString.hasSuffix("Privacy_ScreenCapture"))
     }
