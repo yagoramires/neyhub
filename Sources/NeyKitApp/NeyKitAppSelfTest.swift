@@ -85,28 +85,77 @@ public enum NeyKitAppSelfTest {
         precondition(!fm.fileExists(atPath: update.path))
 
         // stage: zip bom vai inteiro para Update/{NeyHub.app, notes.md, version}.
-        zip(me, to: work.appendingPathComponent("good.zip"))
-        precondition(u.stage(zip: work.appendingPathComponent("good.zip"), notes: "### Novo") == myVersion)
+        let good = work.appendingPathComponent("good.zip")
+        func fresh() -> Updater { Updater(name: "NeyHub", repo: "yagoramires/neyhub", id: "local.neyhub") }
+        zip(me, to: good)
+        precondition(u.stage(zip: good, notes: "### Novo") == myVersion)
         precondition(PluginSignature.isTrustedApp(stagedApp, id: "local.neyhub"))
         precondition((try? String(contentsOf: update.appendingPathComponent("version"), encoding: .utf8)) == myVersion)
-        precondition(Updater(name: "NeyHub", repo: "yagoramires/neyhub", id: "local.neyhub").staged == myVersion)
+        precondition(fresh().staged == myVersion)
 
-        // applyStaged: candidato adulterado depois de preparado → não troca.
+        // App atual fora de um .app ou sem versão: nunca troca nem prepara, e o preparado fica onde está.
+        let notApp = root.appendingPathComponent("Current/NeyHub"), noVersion = root.appendingPathComponent("Current/Vazio.app")
+        fakeApp(notApp, version: "0.0.1")
+        try! fm.createDirectory(at: noVersion, withIntermediateDirectories: true)
+        for odd in [notApp, noVersion] {
+            Updater.currentApp = odd
+            precondition(!u.applyStaged() && u.stage(zip: good, notes: "") == nil && fresh().staged == nil)
+            precondition(fm.fileExists(atPath: odd.path) && fm.fileExists(atPath: stagedApp.path))
+        }
+        precondition(Updater.version(of: notApp) == "0.0.1")
+        Updater.currentApp = current
+
+        // applyStaged: preparado adulterado → não troca, descarta Update/ e zera staged.
         let extra = stagedApp.appendingPathComponent("Contents/Resources/extra.txt")
+        let a = fresh()
+        precondition(a.staged == myVersion)
         write("x", extra)
-        precondition(!u.applyStaged())
+        precondition(!a.applyStaged() && a.staged == nil && !fm.fileExists(atPath: update.path))
         precondition(Updater.version(of: current) == "0.0.1")
-        try! fm.removeItem(at: extra)
 
-        // Candidato não mais novo que o instalado → não troca.
+        // init: preparado adulterado no disco também é descartado.
+        precondition(u.stage(zip: good, notes: "### Novo") == myVersion)
+        write("x", extra)
+        precondition(fresh().staged == nil && !fm.fileExists(atPath: update.path))
+
+        // Preparado não mais novo que o instalado → não troca e é descartado.
+        precondition(u.stage(zip: good, notes: "### Novo") == myVersion)
         fakeApp(current, version: myVersion)
-        precondition(!u.applyStaged())
-        precondition(fm.fileExists(atPath: stagedApp.path))
+        precondition(!u.applyStaged() && !fm.fileExists(atPath: update.path) && Updater.version(of: current) == myVersion)
 
-        // Caminho feliz: troca, e uma segunda chamada não faz nada.
+        // Lock: com ele tomado, applyStaged espera e stage não troca Update/.
         fakeApp(current, version: "0.0.1")
-        precondition(u.applyStaged())
-        precondition(Updater.version(of: current) == myVersion && PluginSignature.isTrustedApp(current, id: "local.neyhub"))
+        precondition(u.stage(zip: good, notes: "### Novo") == myVersion)
+        Updater.lock.lock()
+        let applied = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async { precondition(u.applyStaged()); applied.signal() }
+        precondition(applied.wait(timeout: .now() + 0.5) == .timedOut && Updater.version(of: current) == "0.0.1")
+        Updater.lock.unlock()
+        precondition(applied.wait(timeout: .now() + 30) == .success && Updater.version(of: current) == myVersion)
+        fakeApp(current, version: "0.0.1")
+        try! fm.removeItem(at: update)
+        Updater.lock.lock()
+        let staging = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async { _ = u.stage(zip: good, notes: "### Novo"); staging.signal() }
+        precondition(staging.wait(timeout: .now() + 3) == .timedOut && !fm.fileExists(atPath: update.path))
+        Updater.lock.unlock()
+        precondition(staging.wait(timeout: .now() + 30) == .success && fm.fileExists(atPath: stagedApp.path))
+
+        // Corrida: applyStaged em laço enquanto stage roda noutra thread; o destino é sempre o original ou o app íntegro.
+        for _ in 0..<3 {
+            fakeApp(current, version: "0.0.1")
+            try? fm.removeItem(at: update)
+            let done = DispatchSemaphore(value: 0)
+            DispatchQueue.global().async { _ = u.stage(zip: good, notes: "### Novo"); done.signal() }
+            var ok = false
+            let deadline = Date().addingTimeInterval(30)
+            while !ok && Date() < deadline {
+                ok = u.applyStaged()
+                if !ok { precondition(Updater.version(of: current) == "0.0.1") }
+            }
+            done.wait()
+            precondition(ok && PluginSignature.isTrustedApp(current, id: "local.neyhub"))
+        }
         precondition(u.staged == nil && !u.applyStaged())
 
         // Dentro do .app (id do processo → UserDefaults.standard) as novidades saem uma vez.

@@ -8,6 +8,8 @@ public final class Updater {
     static var supportRoot = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
     /// App que será trocado; os testes trocam por um bundle falso.
     static var currentApp = Bundle.main.bundleURL
+    /// Uma troca por vez em `Update/` e no app: stage roda na fila do URLSession, applyStaged na main.
+    static let lock = NSLock()
 
     private let name: String, repo: String, id: String
     private var timer: Timer?
@@ -19,12 +21,31 @@ public final class Updater {
 
     public init(name: String, repo: String, id: String) {
         self.name = name; self.repo = repo; self.id = id
-        if let v = Self.version(of: stagedApp), Self.isSafeToApply(staged: v, current: currentVersion) { staged = v }
+        Self.lock.lock()
+        staged = validStaged()
+        Self.lock.unlock()
     }
 
     private static func updateDir(_ id: String) -> URL { supportRoot.appendingPathComponent("\(id)/Update") }
     private var stagedApp: URL { Self.updateDir(id).appendingPathComponent("\(name).app") }
-    private var currentVersion: String { Self.version(of: Self.currentApp) ?? "0" }
+    /// nil quando o app atual não é um .app com versão: aí nada é preparado nem trocado.
+    private var currentVersion: String? {
+        Self.currentApp.pathExtension == "app" ? Self.version(of: Self.currentApp) : nil
+    }
+
+    /// Versão do preparado se ele pode ser aplicado. Preparado inválido (adulterado ou velho) é descartado, para não travar o updater.
+    private func validStaged() -> String? {
+        let app = stagedApp
+        guard let current = currentVersion, FileManager.default.fileExists(atPath: app.path) else { return nil }
+        guard let version = Self.version(of: app), Self.isSafeToApply(staged: version, current: current),
+              PluginSignature.isTrustedApp(app, id: id) else {
+            log("preparado inválido descartado")
+            try? FileManager.default.removeItem(at: Self.updateDir(id))
+            staged = nil
+            return nil
+        }
+        return version
+    }
 
     static func version(of app: URL) -> String? {
         NSDictionary(contentsOf: app.appendingPathComponent("Contents/Info.plist"))?["CFBundleShortVersionString"] as? String
@@ -35,18 +56,19 @@ public final class Updater {
     /// Primeira checagem em 5 s, depois a cada 6 h.
     public func start() {
         timer?.invalidate()
+        guard currentVersion != nil else { return log("\(Self.currentApp.path) não é um .app com versão; sem atualização automática") }
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in self?.check() }
         timer = Timer.scheduledTimer(withTimeInterval: 6 * 3600, repeats: true) { [weak self] _ in self?.check() }
     }
 
     /// Falha de rede ou assinatura só loga: tenta de novo no próximo ciclo.
     private func check() {
-        guard !busy else { return }
+        guard !busy, let current = currentVersion else { return }
         busy = true
-        let floor = staged ?? currentVersion, name = name
+        let floor = staged ?? current, name = name
         var request = URLRequest(url: Release.latestURL(repo: repo))
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        request.setValue("\(name)/\(currentVersion)", forHTTPHeaderField: "User-Agent")
+        request.setValue("\(name)/\(current)", forHTTPHeaderField: "User-Agent")
         URLSession.shared.dataTask(with: request) { data, _, error in
             guard let release = data.flatMap(Release.parse) else {
                 self.log("não deu pra consultar (\(error?.localizedDescription ?? "resposta inesperada"))")
@@ -96,7 +118,7 @@ public final class Updater {
                 log("o zip não tem o \(name).app")
                 return nil
             }
-            guard Self.isSafeToApply(staged: version, current: currentVersion) else { return nil }
+            guard let current = currentVersion, Self.isSafeToApply(staged: version, current: current) else { return nil }
             guard PluginSignature.isTrustedApp(app, id: id) else {
                 log("assinatura de \(version) recusada")
                 return nil
@@ -104,6 +126,8 @@ public final class Updater {
             try fm.moveItem(at: app, to: folder.appendingPathComponent("\(name).app"))
             try notes.write(to: folder.appendingPathComponent("notes.md"), atomically: true, encoding: .utf8)
             try version.write(to: folder.appendingPathComponent("version"), atomically: true, encoding: .utf8)
+            Self.lock.lock()
+            defer { Self.lock.unlock() }
             let dir = Self.updateDir(id)
             try fm.createDirectory(at: dir.deletingLastPathComponent(), withIntermediateDirectories: true)
             if fm.fileExists(atPath: dir.path) { try fm.removeItem(at: dir) }
@@ -118,12 +142,10 @@ public final class Updater {
 
     /// Chamar em `applicationWillTerminate`. Confere tudo de novo; em qualquer falha deixa o app atual intacto.
     public func applyStaged() -> Bool {
+        Self.lock.lock()
+        defer { Self.lock.unlock() }
         let app = stagedApp, current = Self.currentApp
-        guard let version = Self.version(of: app), Self.isSafeToApply(staged: version, current: currentVersion) else { return false }
-        guard PluginSignature.isTrustedApp(app, id: id) else {
-            log("assinatura de \(version) recusada na hora de aplicar")
-            return false
-        }
+        guard let version = validStaged() else { return false }
         do {
             // Troca atômica: o app atual só sai do lugar quando o novo já está nele.
             _ = try FileManager.default.replaceItemAt(current, withItemAt: app)
