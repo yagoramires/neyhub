@@ -10,5 +10,10 @@ if arguments.contains("--selftest") {
 }
 
 let app = NSApplication.shared
+if let flag = arguments.firstIndex(of: "--snapshots"), arguments.indices.contains(flag + 1) {
+    app.setActivationPolicy(.prohibited)
+    Snapshots.run(into: URL(fileURLWithPath: arguments[flag + 1]))
+    exit(0)
+}
 app.setActivationPolicy(.regular)
 app.run()
