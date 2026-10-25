@@ -46,3 +46,17 @@ if (( rc != 0 )); then
   cat "$ERR" >&2
   exit $rc
 fi
+
+# --- release: changelog-section.sh e --validate-manifest ---
+CL="$FIX/CHANGELOG.md"
+printf '# Changelog\n\n## [0.2.0] - 2026-11-01\n### Corrigido\n- b\n\n## [0.1.0] - 2026-10-25\n### Adicionado\n- a\n' > "$CL"
+[[ "$(scripts/changelog-section.sh 0.2.0 "$CL")" == $'### Corrigido\n- b' ]] || { echo "✗ changelog-section 0.2.0" >&2; exit 1; }
+[[ "$(scripts/changelog-section.sh 0.1.0 "$CL")" == $'### Adicionado\n- a' ]] || { echo "✗ changelog-section 0.1.0" >&2; exit 1; }
+if scripts/changelog-section.sh 9.9.9 "$CL" >/dev/null 2>&1; then echo "✗ versão inexistente deveria falhar" >&2; exit 1; fi
+NH=build/NeyHub.app/Contents/MacOS/NeyHub
+$NH --validate-manifest Fixtures/HelloPlugin/manifest.json >/dev/null || { echo "✗ manifest bom recusado" >&2; exit 1; }
+sed 's#libHelloPlugin.dylib#../x#' Fixtures/HelloPlugin/manifest.json > "$FIX/bad.json"
+if $NH --validate-manifest "$FIX/bad.json" >/dev/null 2>&1; then echo "✗ binary ../x aceito" >&2; exit 1; fi
+sed 's/"contract": 1/"contract": 2/' Fixtures/HelloPlugin/manifest.json > "$FIX/c2.json"
+if $NH --validate-manifest "$FIX/c2.json" >/dev/null 2>&1; then echo "✗ contract 2 aceito" >&2; exit 1; fi
+echo "selftest release ok"

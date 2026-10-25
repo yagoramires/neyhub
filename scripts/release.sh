@@ -1,0 +1,83 @@
+#!/bin/zsh
+# Empacota uma release local: dist/<Nome>-<v>.{dmg,zip,neyplugin} + notas em build/notes-<v>.md.
+# Copie para <app>/scripts/release.sh e ajuste NAME / PLUGIN_PRODUCT (vazio = app sem plugin).
+# Só empacota. Publicar exige --publish E NEYHUB_CONFIRM_PUBLISH=yes (senão só mostra o que faria).
+# Uso: scripts/release.sh [--dry-run] [--publish]
+set -euo pipefail
+setopt nullglob
+cd "$(dirname "$0")/.."
+
+NAME="NeyHub"
+PLUGIN_PRODUCT=""
+NEYHUB_PATH="${NEYHUB_PATH:-.}"   # nos apps: ${NEYHUB_PATH:-../neyhub}
+
+PUBLISH=0
+for arg in "$@"; do
+  case $arg in
+    --dry-run) ;;  # já é o padrão; mantido por compatibilidade
+    --publish) PUBLISH=1 ;;
+    *) echo "uso: $0 [--dry-run] [--publish]" >&2; exit 2 ;;
+  esac
+done
+
+IDENTITY="Aero Local Signing"
+security find-identity -p codesigning | grep -q "$IDENTITY" || { echo "✗ sem a identidade \"$IDENTITY\"" >&2; exit 1; }
+VALIDATOR="$NEYHUB_PATH/build/NeyHub.app/Contents/MacOS/NeyHub"
+if [[ -n "$PLUGIN_PRODUCT" && ! -x "$VALIDATOR" ]]; then
+  echo "✗ validador não encontrado: $VALIDATOR (rode scripts/build.sh no neyhub ou defina NEYHUB_PATH)" >&2
+  exit 1
+fi
+
+V=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
+NOTES="build/notes-$V.md"
+mkdir -p build dist
+"$NEYHUB_PATH/scripts/changelog-section.sh" "$V" CHANGELOG.md > "$NOTES"
+rm -f "dist/$NAME-$V".*
+
+# App universal assinado + zip (o build.sh --dist faz os dois)
+scripts/build.sh release --dist
+APP="build/$NAME.app"
+ASSETS=("dist/$NAME-$V.zip")
+
+# dmg: .app + atalho para /Applications
+STAGE=$(mktemp -d)
+trap 'rm -rf "$STAGE"' EXIT
+cp -R "$APP" "$STAGE/"
+ln -s /Applications "$STAGE/Applications"
+hdiutil create -volname "$NAME" -srcfolder "$STAGE" -ov -format UDZO "dist/$NAME-$V.dmg" >/dev/null
+ASSETS=("dist/$NAME-$V.dmg" "${ASSETS[@]}")
+
+# Plugin: pasta + manifest + dylib assinada (+ ícone) -> zip com extensão .neyplugin
+if [[ -n "$PLUGIN_PRODUCT" ]]; then
+  swift build -c release --arch arm64 --arch x86_64 --product "$PLUGIN_PRODUCT"
+  BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/lib$PLUGIN_PRODUCT.dylib"
+  PLG="build/$NAME.neyplugin"
+  rm -rf "$PLG"; mkdir -p "$PLG"
+  python3 - Resources/plugin.json "$V" "$PLG/manifest.json" <<'PY'
+import json, sys
+src, version, out = sys.argv[1:]
+m = json.load(open(src))
+m.update(version=version, contract=1)
+json.dump(m, open(out, "w"), indent=2, ensure_ascii=False)
+PY
+  "$VALIDATOR" --validate-manifest "$PLG/manifest.json"
+  BINARY=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["binary"])' "$PLG/manifest.json")
+  cp "$BIN" "$PLG/$BINARY"
+  [[ -f Resources/AppIcon.icns ]] && cp Resources/AppIcon.icns "$PLG/icon.icns"
+  codesign --force --sign "$IDENTITY" --timestamp=none "$PLG/$BINARY"
+  ditto -c -k --norsrc --keepParent "$PLG" "dist/$NAME-$V.neyplugin"
+  ASSETS+=("dist/$NAME-$V.neyplugin")
+fi
+
+# Exatamente 1 .zip (o do app); o .neyplugin não conta
+ZIPS=("dist/$NAME-$V"*.zip); N=${#ZIPS}
+(( N == 1 )) || { echo "✗ esperado 1 .zip em dist/ para $V, achei $N" >&2; exit 1; }
+for a in "${ASSETS[@]}"; do echo "✓ $a"; done
+echo "✓ notas: $NOTES"
+
+if (( PUBLISH )) && [[ "${NEYHUB_CONFIRM_PUBLISH:-}" == yes ]]; then
+  gh release create "v$V" "${ASSETS[@]}" --title "$NAME $V" --notes-file "$NOTES"
+else
+  echo "(só empacotado) publicaria v$V com: ${ASSETS[*]}"
+  echo "  para publicar: --publish e NEYHUB_CONFIRM_PUBLISH=yes"
+fi
