@@ -13,6 +13,7 @@ final class HubModel: ObservableObject {
     @Published var presences: [String: Presence] = [:]   // id → presença aplicada (PluginHost.apply)
     /// Tela de cada plugin, criada uma vez: trocar de item na sidebar não recria.
     var screens: [String: NSViewController] = [:]
+    let awake = AwakeModel()
 
     // Loja (StoreView.swift)
     let store: PluginStore
@@ -38,9 +39,6 @@ final class HubModel: ObservableObject {
 
 struct Sidebar: View {
     @ObservedObject var model: HubModel
-    // Task 11 liga ao Acordado de verdade.
-    private let awake = Binding<Bool>.constant(true)
-
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             (Text("ney").foregroundStyle(Grafite.strong) + Text("hub").foregroundStyle(Grafite.accent))
@@ -55,14 +53,7 @@ struct Sidebar: View {
                 }
             }
             Spacer(minLength: 0)
-            HStack {
-                Text("☾ Acordado").font(.system(size: 11)).foregroundStyle(Grafite.accent)
-                Spacer()
-                GSwitch(isOn: awake, label: "Acordado").allowsHitTesting(false).opacity(0.6)
-            }
-            .padding(.leading, 7).padding(.vertical, 1)
-            .background(Grafite.awakeBg, in: RoundedRectangle(cornerRadius: 9))
-            .overlay(RoundedRectangle(cornerRadius: 9).stroke(Grafite.awakeBorder, lineWidth: 1))
+            AwakeSwitch(awake: model.awake)
         }
         .padding(.horizontal, 8).padding(.bottom, 12).padding(.top, 38) // 38: espaço dos botões da janela
         .frame(width: 170)

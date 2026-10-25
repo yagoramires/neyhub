@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
@@ -6,6 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let host = HostBridge()
     private lazy var notifications = Notifications(model: model)
     private var window: NSWindow?
+    private var awakeItem: AwakeStatusItem?
+    private var awakeSub: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         notifications.install()
@@ -14,6 +17,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         model.store.applyPending() // antes de qualquer plugin ser carregado
         model.openStore()          // catálogo do cache/embutido já; rede em segundo plano
         showWindow()
+        awakeSub = model.awake.$showInMenuBar.sink { [self] show in // $: dispara já com o valor salvo
+            awakeItem = show ? (awakeItem ?? AwakeStatusItem(awake: model.awake)) : nil
+        }
         PluginHost.startAll(model, store: model.store, host: host)
         notifications.registerCategories()
         Task { await model.refreshPermissions() } // ponto da sidebar já no início
@@ -39,6 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         w.delegate = self
         window = w
         NSApp.setActivationPolicy(.regular)
+        model.awake.refresh()
         w.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

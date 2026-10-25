@@ -13,7 +13,33 @@ enum SelfTest {
         catalog()
         store()
         notifications()
+        awake()
         if let fixture { plugins(fixture); storeInstall(fixture) } else { FileHandle.standardError.write(Data("sem --fixture: pulando carga de plugins\n".utf8)) }
+    }
+
+    static func awake() {
+        precondition(Awake.parse(pmset: " SleepDisabled\t\t1\n") == true)
+        precondition(Awake.parse(pmset: " SleepDisabled\t\t0\n") == false)
+        precondition(Awake.parse(pmset: " sleep 1\n displaysleep 10\n") == nil)
+        let line = "yagoramires ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1"
+        precondition(Awake.sudoersLine(user: "yagoramires") == line)
+        precondition(Awake.sudoersLine(user: "x ALL=(ALL) ALL #") == nil && Awake.sudoersLine(user: "") == nil)
+        precondition(Awake.installScript(user: "x;rm") == nil)
+        let script = Awake.installScript(user: "yagoramires")!
+        let at = ["mktemp", "visudo -cf", "install -m 0440 -o root -g wheel"].map { script.range(of: $0)?.lowerBound }
+        precondition(!at.contains { $0 == nil } && at[0]! < at[1]! && at[1]! < at[2]!)
+        precondition(script.contains("'\(line)'"))
+        // O literal do AppleScript não pode ter aspa sem escape (senão o script de root vira outro comando).
+        let src = Awake.appleScript(for: script)
+        let head = "do shell script \"", tail = "\" with administrator privileges"
+        precondition(src.hasPrefix(head) && src.hasSuffix(tail))
+        let literal = src.dropFirst(head.count).dropLast(tail.count)
+        var escaped = false
+        for c in literal {
+            precondition(escaped || c != "\"", "aspa sem escape")
+            escaped = !escaped && c == "\\"
+        }
+        precondition(!escaped)
     }
 
     @MainActor static func notifications() {
