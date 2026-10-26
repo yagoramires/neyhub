@@ -80,14 +80,74 @@ enum Snapshots {
         print("ok \(folder.path)")
     }
 
+    /// Plugin de mentira do tour: a tela é a imagem que o próprio app desenhou com dados de exemplo.
+    private final class TourPlugin: NSObject, NeyPlugin {
+        let image: NSImage?
+        init(image: NSImage?) { self.image = image }
+        var contractVersion: Int { neyPluginContractVersion }
+        func start(host: NeyHost) {}
+        func stop() {}
+        func setMenuBarVisible(_ visible: Bool) {}
+        func makeScreen() -> NSViewController? {
+            let vc = NSViewController()
+            let view = NSImageView()
+            view.image = image
+            view.imageScaling = .scaleProportionallyUpOrDown
+            view.imageAlignment = .alignTopLeft
+            // A imagem pode ser maior que a área: sem isto o NSImageView exige o tamanho dela e some.
+            for o in [NSLayoutConstraint.Orientation.horizontal, .vertical] { view.setContentCompressionResistancePriority(.defaultLow, for: o) }
+            vc.view = view
+            return vc
+        }
+        func makeSettings() -> NSViewController { NSViewController() }
+    }
+
+    /// Janela padrão (1100 × 680) com os seis apps instalados: Loja, a tela de cada app com tela e Permissões.
+    /// Nenhum dado real: o catálogo é o embutido e as telas vêm de `screens/<app>.png`.
+    static func tour(into folder: URL, screens: URL) {
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let bundled = Bundle.main.url(forResource: "catalog", withExtension: "json")
+            ?? URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../catalog.json")
+        let catalog = Catalog.decode((try? Data(contentsOf: bundled)) ?? Data()) ?? []
+        let permissions: [String: String] = ["local.aero": #"["accessibility"]"#, "local.dose": #"["notifications"]"#,
+                                             "local.capture": #"["screenRecording","microphone"]"#, "local.deck": #"["accessibility"]"#,
+                                             "local.pauta": #"["notifications"]"#, "local.hub": "[]"]
+        // Um modelo novo por quadro: reaproveitado, um quadro herdava o estado do anterior e saía em branco.
+        func makeModel() -> HubModel { MainActor.assumeIsolated {
+            let model = HubModel(store: PluginStore(root: FileManager.default.temporaryDirectory.appendingPathComponent("nh-tour")))
+            model.catalog = catalog
+            for e in catalog {
+                let m = try! JSONDecoder().decode(PluginManifest.self, from: Data(
+                    #"{"id":"\#(e.id)","name":"\#(e.name)","version":"0.2.0","contract":1,"hasScreen":\#(e.hasScreen),"permissions":\#(permissions[e.id] ?? "[]"),"binary":"l.dylib"}"#.utf8))
+                model.installed[e.id] = m
+                let key = e.id.split(separator: ".").last.map(String.init) ?? e.id
+                model.loaded.append(LoadedPlugin(manifest: m, plugin: TourPlugin(image: NSImage(contentsOf: screens.appendingPathComponent("\(key).png"))),
+                                                 folder: URL(fileURLWithPath: "/")))
+                model.presences[e.id] = Presence(screen: e.hasScreen, menuBar: true)
+            }
+            model.granted = [.accessibility: true, .notifications: true, .screenRecording: true, .microphone: false]
+            return model
+        } }
+        let size = CGSize(width: 1100, height: 680)
+        let routes: [(String, Route)] = [("1-loja", .store)]
+            + catalog.filter(\.hasScreen).enumerated().map { ("\($0.offset + 2)-\($0.element.name.lowercased())", .app($0.element.id)) }
+            + [("9-permissoes", .permissions)]
+        for (name, route) in routes {
+            let model = makeModel()
+            MainActor.assumeIsolated { model.route = route }
+            saveHosted(RootView(model: model).frame(width: size.width, height: size.height), as: "\(name).png", in: folder, size: size)
+        }
+        print("ok \(folder.path)")
+    }
+
     /// ImageRenderer não desenha ScrollView/LazyVGrid: aqui a view vai numa janela fora da tela e é capturada como o app real.
-    private static func saveHosted<V: View>(_ view: V, as name: String, in folder: URL) {
+    private static func saveHosted<V: View>(_ view: V, as name: String, in folder: URL, size: CGSize = CGSize(width: 900, height: 600)) {
         MainActor.assumeIsolated {
             let host = NSHostingView(rootView: view)
-            let window = NSWindow(contentRect: NSRect(x: -3000, y: 0, width: 900, height: 600), styleMask: .borderless, backing: .buffered, defer: false)
+            let window = NSWindow(contentRect: NSRect(x: -3000, y: 0, width: size.width, height: size.height), styleMask: .borderless, backing: .buffered, defer: false)
             window.contentView = host
             window.orderFrontRegardless()
-            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+            RunLoop.current.run(until: Date().addingTimeInterval(1))
             guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { print("falhou \(name)"); exit(1) }
             host.cacheDisplay(in: host.bounds, to: rep)
             window.orderOut(nil)

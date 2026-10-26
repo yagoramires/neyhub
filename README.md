@@ -1,8 +1,12 @@
+<p align="center"><img src="Resources/icon-src/icon.png" width="128" alt="Ícone do NeyHub"></p>
+
 # NeyHub
 
 Loja e hub dos meus apps de barra de menus do macOS: instala, atualiza e usa cada app num lugar só, com as permissões dadas uma vez e sem lotar a barra de menus.
 
 [Baixar a última versão](https://github.com/yagoramires/neyhub/releases/latest) · [Reportar problema](https://github.com/yagoramires/neyhub/issues/new)
+
+![O NeyHub com os seis apps instalados: Loja, as telas do Dose, Deck, Pauta e Hub, e Permissões](docs/tour.gif)
 
 Cada app continua sendo um repositório separado e funciona sozinho, fora do NeyHub. Na 0.1.0 a Loja tem seis:
 
@@ -100,7 +104,10 @@ Precisa só das Command Line Tools (`xcode-select --install`), sem Xcode.
 scripts/setup-signing.sh   # uma vez: cria o certificado "Aero Local Signing" no Chaveiro
 scripts/build.sh --run     # compila, assina e abre build/NeyHub.app
 scripts/selftest.sh        # testes (imprime "selftest ok")
+scripts/icon.sh            # ícones do NeyHub e dos apps (Resources/icon-src → .icns)
 ```
+
+O `docs/tour.gif` sai do modo `NeyHub --tour <quadros> <telas>`: a janela de verdade com os seis apps instalados, e em `<telas>/<app>.png` a tela de cada app desenhada pelo próprio app com dados de exemplo (`Dose --snapshots`, `Deck --snapshots`, `Pauta --snapshots`, `Hub --render screen@898`). Nenhum dado real entra no GIF.
 
 Sem o certificado o build falha de propósito: plugins e atualizações só são aceitos com essa assinatura.
 

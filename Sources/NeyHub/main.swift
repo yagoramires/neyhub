@@ -33,6 +33,12 @@ if let flag = arguments.firstIndex(of: "--snapshots"), arguments.indices.contain
     Snapshots.run(into: URL(fileURLWithPath: arguments[flag + 1]))
     exit(0)
 }
+// `--tour <saída> <telas>`: quadros do GIF do README (telas/<app>.png = a tela de cada app com dados de exemplo).
+if let flag = arguments.firstIndex(of: "--tour"), arguments.indices.contains(flag + 2) {
+    app.setActivationPolicy(.prohibited)
+    Snapshots.tour(into: URL(fileURLWithPath: arguments[flag + 1]), screens: URL(fileURLWithPath: arguments[flag + 2]))
+    exit(0)
+}
 // Instância única: outro NeyHub aberto antes deste (open -n, outra cópia) vem para a frente e este sai.
 // Só o mais antigo fica: dois abertos ao mesmo tempo não saem os dois.
 let me = NSRunningApplication.current
