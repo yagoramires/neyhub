@@ -15,5 +15,5 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - Acordado: switch na barra lateral que não deixa o Mac dormir, nem com a tampa fechada. Pede a senha de administrador uma vez, só desliga quando você manda e mostra sempre o estado real do sistema. Opcional na barra de menus.
 - App avulso aberto: o NeyHub pergunta antes de iniciar o plugin; pausado ao abrir, o app começa quando o avulso fecha.
 - Atualização automática do NeyHub e dos apps: checa 5 s depois de abrir e a cada 6 h, baixa em segundo plano, aplica no próximo início (ou em "Reiniciar agora") e mostra as novidades depois.
-- Tema Grafite, item de login, instância única e instalador `.dmg`.
+- Ícone próprio ("ney" branco sobre "hub" verde-limão, fundo grafite), tema Grafite, item de login, instância única e instalador `.dmg`.
 - NeyKit para os apps: contrato de plugin v1, tema Grafite e tipos comuns; NeyKitApp para as cascas avulsas (atualização, novidades e checagem do NeyHub).
