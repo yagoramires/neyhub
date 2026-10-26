@@ -1,0 +1,37 @@
+<!doctype html>
+<!-- Ícones dos apps no padrão do NeyHub: fundo grafite, desenho branco com um detalhe verde-limão. -->
+<!-- O desenho de cada app é o mesmo de antes, só nas cores novas. Uso: apps.html#aero (canvas 1024, quadrado 824). Gerar: scripts/icon.sh -->
+<html><head><meta charset="utf-8"><style>html,body{margin:0;width:1024px;height:1024px;background:transparent}svg{display:block}</style></head>
+<body><script>
+const W = "#fff", L = "#c6ff3d", D = "#121315";
+const glyph = {
+  aero: `<rect x="190" y="190" width="200" height="444" rx="44" fill="${W}"/>
+         <rect x="434" y="190" width="200" height="200" rx="44" fill="${W}" fill-opacity=".85"/>
+         <rect x="434" y="434" width="200" height="200" rx="44" fill="${L}"/>`,
+  dose: `<clipPath id="c"><rect x="122" y="307" width="580" height="210" rx="105"/></clipPath>
+         <g transform="rotate(-45 412 412)" clip-path="url(#c)">
+           <rect x="122" y="307" width="580" height="210" fill="${W}"/>
+           <rect x="122" y="307" width="290" height="210" fill="${L}"/>
+         </g>`,
+  capture: `<g fill="none" stroke="${W}" stroke-width="54" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M200 320V230q0-30 30-30h90M504 200h90q30 0 30 30v90M624 504v90q0 30-30 30h-90M320 624h-90q-30 0-30-30v-90"/></g>
+            <circle cx="412" cy="412" r="120" fill="none" stroke="${W}" stroke-opacity=".55" stroke-width="30"/>
+            <circle cx="412" cy="412" r="76" fill="${L}"/>`,
+  pauta: `<circle cx="290" cy="330" r="72" fill="${L}"/>
+          <path d="M256 330l24 24 46-50" fill="none" stroke="${D}" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="290" cy="494" r="58" fill="none" stroke="${W}" stroke-width="26"/>
+          <g stroke="${W}" stroke-width="48" stroke-linecap="round"><path d="M420 330h200M420 494h200"/></g>`,
+  deck: [0, 1, 2].flatMap(r => [0, 1, 2].map(c =>
+          `<rect x="${172 + c * 170}" y="${172 + r * 170}" width="140" height="140" rx="32" fill="${r === 1 && c === 1 ? L : W}" fill-opacity="${r === 1 && c === 1 ? 1 : .85}"/>`)).join(""),
+  hub: `<path d="M196 404L412 214l216 190v202q0 28-28 28H224q-28 0-28-28z" fill="none" stroke="${W}" stroke-width="50" stroke-linejoin="round"/>
+        <circle cx="412" cy="486" r="64" fill="${L}"/>`,
+};
+const g = glyph[location.hash.slice(1)];
+document.body.innerHTML = `<svg width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs><linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#202226"/><stop offset="1" stop-color="#121315"/></linearGradient></defs>
+  <g transform="translate(100 100)">
+    <rect width="824" height="824" rx="185" fill="url(#f)"/>
+    <rect x="1" y="1" width="822" height="822" rx="184" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width="2"/>
+    ${g}
+  </g></svg>`;
+</script></body></html>

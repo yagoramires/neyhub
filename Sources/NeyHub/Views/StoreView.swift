@@ -141,21 +141,38 @@ struct StoreView: View {
         if let id = model.detail, let entry = model.catalog.first(where: { $0.id == id }) {
             AppDetailView(model: model, entry: entry)
         } else {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Loja").font(.system(size: 16, weight: .semibold)).foregroundStyle(Grafite.strong)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Loja").font(.system(size: 24, weight: .heavy)).foregroundStyle(Grafite.strong)
                     .accessibilityAddTraits(.isHeader)
-                Text(subtitle).font(.system(size: 11)).foregroundStyle(Grafite.muted)
-                if !model.staged.isEmpty || model.hubStaged != nil { StagedBanner(model: model).padding(.top, 10) }
+                Text(subtitle).font(.system(size: 12)).foregroundStyle(Grafite.muted)
+                if !model.staged.isEmpty || model.hubStaged != nil { StagedBanner(model: model).padding(.top, 12) }
                 ScrollView {
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 8, alignment: .top), GridItem(.flexible(), alignment: .top)], spacing: 8) {
-                        ForEach(model.catalog, id: \.id) { StoreCard(model: model, entry: $0) }
-                        ForEach(model.brokenFolders, id: \.self) { BrokenCard(model: model, folder: $0) }
+                    VStack(alignment: .leading, spacing: 10) {
+                        let installed = model.catalog.filter { model.installed[$0.id] != nil }
+                        let available = model.catalog.filter { model.installed[$0.id] == nil }
+                        if !installed.isEmpty { section("Instalados", installed) }
+                        if !available.isEmpty { section("Disponíveis", available) }
+                        if !model.brokenFolders.isEmpty {
+                            grid { ForEach(model.brokenFolders, id: \.self) { BrokenCard(model: model, folder: $0) } }
+                        }
                     }
                     .padding(.bottom, 16)
                 }
-                .padding(.top, 10)
+                .padding(.top, 14)
             }
         }
+    }
+
+    private func section(_ title: String, _ entries: [CatalogEntry]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            GSectionLabel("\(title) · \(entries.count)").padding(.top, 4)
+            grid { ForEach(entries, id: \.id) { StoreCard(model: model, entry: $0) } }
+        }
+    }
+
+    /// 3 colunas na janela padrão, 2 ou 1 quando ela estreita.
+    private func grid<C: View>(@ViewBuilder _ content: () -> C) -> some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 250), spacing: 12, alignment: .top)], spacing: 12, content: content)
     }
 
     private var subtitle: String {
@@ -196,15 +213,35 @@ extension HubModel {
     }
 }
 
-/// Ícone de letra com cor estável por id (o mesmo da sidebar).
+/// Ícone do app (Resources/icons/<app>.png, gerado por scripts/icon.sh); sem ele, a letra com cor estável por id.
 struct AppIcon: View {
     let name: String, id: String, size: CGFloat
+    private static var cache: [String: NSImage] = [:]
+
     var body: some View {
-        Text(String(name.prefix(1)).uppercased())
-            .font(.system(size: size * 0.45, weight: .bold)).foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(Sidebar.color(for: id), in: RoundedRectangle(cornerRadius: size * 0.3))
-            .accessibilityHidden(true)
+        Group {
+            if let image = Self.image(id) {
+                Image(nsImage: image).resizable().interpolation(.high)
+            } else {
+                Text(String(name.prefix(1)).uppercased())
+                    .font(.system(size: size * 0.45, weight: .bold)).foregroundStyle(.white)
+                    .frame(width: size, height: size)
+                    .background(Sidebar.color(for: id))
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.225, style: .continuous))
+        .accessibilityHidden(true)
+    }
+
+    /// "local.aero" → icons/aero.png, lido uma vez.
+    static func image(_ id: String) -> NSImage? {
+        let key = id.split(separator: ".").last.map(String.init) ?? id
+        if let cached = cache[key] { return cached }
+        guard let url = Bundle.main.url(forResource: key, withExtension: "png", subdirectory: "icons"),
+              let image = NSImage(contentsOf: url) else { return nil }
+        cache[key] = image
+        return image
     }
 }
 
@@ -239,40 +276,56 @@ struct StoreCard: View {
     let entry: CatalogEntry
 
     var body: some View {
-        GCard {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 8) {
-                    // "Em breve" não tem release: sem detalhe (que consultaria o GitHub).
-                    if entry.soon { header } else {
-                        Button { model.detail = entry.id } label: { header.contentShape(Rectangle()) }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("\(entry.name), \(model.status(entry))")
-                            .accessibilityHint("Abre os detalhes")
-                    }
-                    StoreAction(model: model, entry: entry)
+        VStack(alignment: .leading, spacing: 10) {
+            // "Em breve" não tem release: sem detalhe (que consultaria o GitHub).
+            if entry.soon { header } else {
+                Button { model.detail = entry.id } label: { header.contentShape(Rectangle()) }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(entry.name), \(entry.summary), \(model.status(entry))")
+                    .accessibilityHint("Abre os detalhes")
+            }
+            HStack(spacing: 5) {
+                if entry.hasScreen { tag("Tela") }
+                tag("Barra de menus")
+            }
+            .accessibilityHidden(true)
+            if let problem = model.problems[entry.id] { ProblemText(problem, model: model) }
+            Spacer(minLength: 0)
+            Rectangle().fill(Grafite.cardBorder).frame(height: 1)
+            HStack(spacing: 8) {
+                if model.installed[entry.id] != nil || model.busy.contains(entry.id) {
+                    Text(model.status(entry)).font(.system(size: 11)).foregroundStyle(Grafite.muted).lineLimit(1)
                 }
+                Spacer(minLength: 0)
                 if model.installed[entry.id] != nil {
-                    HStack {
-                        Text("Barra de menus").font(.system(size: 11))
-                        Spacer()
-                        GSwitch(isOn: menuBar, label: "Barra de menus do \(entry.name)")
-                    }
-                    .padding(.top, 4)
+                    Text("Barra de menus").font(.system(size: 11)).foregroundStyle(Grafite.muted)
+                    GSwitch(isOn: menuBar, label: "Barra de menus do \(entry.name)")
                 }
-                if let problem = model.problems[entry.id] { ProblemText(problem, model: model).padding(.top, 6) }
+                StoreAction(model: model, entry: entry)
             }
         }
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
+        .background(Grafite.card, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Grafite.cardBorder, lineWidth: 1))
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
-            AppIcon(name: entry.name, id: entry.id, size: 26)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(entry.name).font(.system(size: 11, weight: .bold)).foregroundStyle(Grafite.strong)
-                Text(model.status(entry)).font(.system(size: 11)).foregroundStyle(Grafite.muted).lineLimit(1)
+        HStack(alignment: .top, spacing: 12) {
+            AppIcon(name: entry.name, id: entry.id, size: 48)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(entry.name).font(.system(size: 14, weight: .bold)).foregroundStyle(Grafite.strong)
+                Text(entry.summary).font(.system(size: 12)).foregroundStyle(Grafite.muted)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
         }
+    }
+
+    private func tag(_ text: String) -> some View {
+        Text(text).font(.system(size: 10)).foregroundStyle(Grafite.ghostText)
+            .padding(.horizontal, 7).padding(.vertical, 2)
+            .background(Grafite.selected, in: RoundedRectangle(cornerRadius: 6))
     }
 
     private var menuBar: Binding<Bool> {

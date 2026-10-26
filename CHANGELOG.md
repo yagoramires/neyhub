@@ -4,7 +4,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ## [0.1.0] - 2026-10-25
 ### Adicionado
-- Loja com seis apps: Aero, Dose, Capture, Deck, Pauta e Hub. Instalar baixa o pacote do GitHub, confere a assinatura e o app já começa a rodar; no card ficam atualizar, desinstalar, modo de exibição, configurações e novidades de cada versão. App ainda sem release aparece como "Em breve".
+- Loja com seis apps: Aero, Dose, Capture, Deck, Pauta e Hub, em cards com o ícone de cada um e separados em Instalados e Disponíveis. Instalar baixa o pacote do GitHub, confere a assinatura e o app já começa a rodar; no card ficam atualizar, desinstalar, modo de exibição, configurações e novidades de cada versão. App ainda sem release aparece como "Em breve".
 - Apps dentro do NeyHub: a tela de cada app abre na janela do NeyHub; cada um escolhe Tela, Barra de menus ou Os dois (app sem tela só mostra ou esconde o ícone).
 - Tela de Permissões: Acessibilidade, Notificações, Gravação de Tela e Microfone (opcional) concedidas uma vez para o NeyHub valem para todos os apps; o botão abre o painel certo dos Ajustes. A Rede local do Hub o macOS pergunta sozinho.
 - Avisos centralizados: as notificações dos apps passam pelo NeyHub e o toque leva ao app, mesmo quando é ele que abre o NeyHub. Sair ou reiniciar mantém os avisos na Central; desinstalar tira os do app.

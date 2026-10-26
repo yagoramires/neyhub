@@ -35,6 +35,7 @@ cp "$BIN" "$APP/Contents/MacOS/NeyHub"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 [[ -f Resources/AppIcon.icns ]] && cp Resources/AppIcon.icns "$APP/Contents/Resources/"
 [[ -f Resources/catalog.json ]] && cp Resources/catalog.json "$APP/Contents/Resources/"
+[[ -d Resources/icons ]] && ditto Resources/icons "$APP/Contents/Resources/icons"
 
 codesign --force --sign "$IDENTITY" --timestamp=none "$APP"
 echo "✓ $APP"
