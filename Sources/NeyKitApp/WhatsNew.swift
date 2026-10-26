@@ -39,7 +39,7 @@ struct NotesView: View {
         VStack(alignment: .leading, spacing: 12) {
             GSectionLabel("Novidades")
             Text(title).font(.system(size: 18, weight: .bold)).foregroundStyle(Grafite.strong)
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(Array(notes.components(separatedBy: .newlines).enumerated()), id: \.offset) { _, line in row(line) }
                 }

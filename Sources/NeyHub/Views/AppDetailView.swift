@@ -16,7 +16,7 @@ struct AppDetailView: View {
     private var plugin: NeyPlugin? { model.loaded.first { $0.manifest.id == entry.id }?.plugin }
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 12) {
                 Button { model.detail = nil } label: {
                     Label("Loja", systemImage: "chevron.left").font(.system(size: 11)).foregroundStyle(Grafite.ghostText)

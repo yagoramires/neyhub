@@ -78,6 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @MainActor func finishStart() {
         started = true
         notifications.finishStart()
+        Task { await model.refreshPermissions(); model.requestMissingOnce() }
         let urls = pendingURLs; pendingURLs = []
         handle(urls)
     }

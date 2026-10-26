@@ -152,6 +152,16 @@ enum SelfTest {
         precondition(!model.missingPermission, "só o Microfone falta: o ponto não acende")
         model.granted[.screenRecording] = false
         precondition(model.missingPermission)
+        // Pede sozinho uma vez cada obrigatória que falta (o macOS só lista o app nos Ajustes depois do 1º pedido).
+        let asked = UserDefaults(suiteName: "nh-selftest-asked")!
+        asked.removePersistentDomain(forName: "nh-selftest-asked")
+        var requested: [Permission] = []
+        model.granted = [.screenRecording: false, .microphone: false]
+        model.requestMissingOnce(defaults: asked) { requested.append($0) }
+        precondition(requested == [.screenRecording], "só a obrigatória que falta, sem o Microfone opcional")
+        model.requestMissingOnce(defaults: asked) { requested.append($0) }
+        precondition(requested == [.screenRecording], "não pede de novo a cada início")
+        asked.removePersistentDomain(forName: "nh-selftest-asked")
         model.installed["c"] = nil; model.granted = [:]
 
         let bridge = HostBridge()

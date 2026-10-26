@@ -16,6 +16,14 @@ extension HubModel {
     /// Ponto na sidebar: alguma permissão não opcional usada por um app instalado foi consultada e está negada.
     var missingPermission: Bool { permissionUsers.contains { !$0.permission.isOptional && granted[$0.permission] == false } }
 
+    /// Pede sozinho, uma vez só, cada permissão obrigatória negada: o macOS só põe o NeyHub na lista dos
+    /// Ajustes depois do primeiro pedido. Chamar depois de `refreshPermissions()`.
+    @MainActor func requestMissingOnce(defaults: UserDefaults = .standard, request: (Permission) -> Void = { $0.request() }) {
+        var asked = Set(defaults.stringArray(forKey: "permissionsAsked") ?? [])
+        for (p, _) in permissionUsers where !p.isOptional && granted[p] == false && asked.insert(p.rawValue).inserted { request(p) }
+        defaults.set(asked.sorted(), forKey: "permissionsAsked")
+    }
+
     @MainActor func refreshPermissions() async {
         for (p, _) in permissionUsers {
             let v = await p.isGranted()

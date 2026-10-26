@@ -55,6 +55,7 @@ extension HubModel {
                 if let m = PluginStore.manifest(at: url) { await MainActor.run { self.staged[e.id] = m.version } }
             } else {
                 await MainActor.run { PluginHost.start(folder: url, model: self) }
+                await self.refreshPermissions(); await MainActor.run { self.requestMissingOnce() } // app novo pode pedir permissão nova
             }
         }
     }
@@ -146,7 +147,7 @@ struct StoreView: View {
                     .accessibilityAddTraits(.isHeader)
                 Text(subtitle).font(.system(size: 12)).foregroundStyle(Grafite.muted)
                 if !model.staged.isEmpty || model.hubStaged != nil { StagedBanner(model: model).padding(.top, 12) }
-                ScrollView {
+                ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 10) {
                         let installed = model.catalog.filter { model.installed[$0.id] != nil }
                         let available = model.catalog.filter { model.installed[$0.id] == nil }
