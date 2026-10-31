@@ -2,6 +2,14 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [0.2.0] - 2026-10-31
+### Alterado
+- Fechar a janela tira o NeyHub do Dock: ele continua rodando só na barra de menus, como o OrbStack. Para deixar o ícone sempre no Dock, ligue **Mostrar ícone no Dock** no menu do ícone da barra de menus (quem já tinha ligado continua com ele).
+- O Hub aparece como **Domo** na Loja, na barra lateral, em Permissões e nos avisos, com o ícone novo (a casa com sinal). O plugin continua o mesmo por baixo: quem já tem o Hub instalado só recebe a atualização.
+
+### Adicionado
+- Plugins e catálogo podem ter um nome de exibição (`displayName`) diferente do `name`, que segue sendo o nome do pacote e da pasta. NeyHub antigo ignora o campo.
+
 ## [0.1.0] - 2026-10-25
 ### Adicionado
 - Loja com seis apps: Aero, Dose, Capture, Deck, Pauta e Hub, em cards com o ícone de cada um e separados em Instalados e Disponíveis. Instalar baixa o pacote do GitHub, confere a assinatura e o app já começa a rodar; no card ficam atualizar, desinstalar, modo de exibição, configurações e novidades de cada versão. App ainda sem release aparece como "Em breve".
