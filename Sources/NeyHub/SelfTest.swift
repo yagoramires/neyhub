@@ -466,6 +466,9 @@ extension SelfTest {
         precondition(entries[4] == CatalogEntry(id: "local.pauta", name: "Pauta", repo: "yagoramires/pauta", summary: "Slack, GitHub e Jira num lugar só", hasScreen: true))
         precondition(entries[5].summary == "Casa conectada: Tuya, SmartThings e Android TV" && entries[3...5].allSatisfy(\.hasScreen))
         precondition(entries[2...5].map(\.repo) == ["yagoramires/capture", "yagoramires/deck", "yagoramires/pauta", "yagoramires/hub"])
+        // O Hub aparece como Domo, mas asset/pasta/validação seguem pelo name "Hub" (NeyHub antigo ignora o displayName).
+        precondition(entries[5].name == "Hub" && entries[5].title == "Domo" && entries[0...4].allSatisfy { $0.title == $0.name })
+        precondition(Catalog.decode(Data(#"[{"id":"local.s","name":"S","displayName":"","repo":"a/s","summary":"","hasScreen":true}]"#.utf8))!.map(\.title) == ["S"])
         let model = HubModel()
         precondition(entries.allSatisfy { model.action($0) == .install })
         // Cartão "Em breve" não oferece Instalar nem consulta releases.

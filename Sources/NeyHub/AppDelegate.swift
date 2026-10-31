@@ -116,7 +116,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
         var sections: [(title: String, notes: String)] = []
         if let notes = Updater.notesAfterUpdate(id: "local.neyhub", current: version), !notes.isEmpty { sections.append(("NeyHub \(version)", notes)) }
-        sections += applied.filter { !$0.notes.isEmpty }.map { ("\($0.name) \($0.version)", $0.notes) }
+        sections += applied.filter { !$0.notes.isEmpty }.map { a in
+            ("\(model.installed.values.first { $0.name == a.name }?.title ?? a.name) \(a.version)", a.notes)
+        }
         if !sections.isEmpty { WhatsNew.show(sections: sections) }
     }
 

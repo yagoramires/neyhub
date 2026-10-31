@@ -34,8 +34,11 @@ public struct PluginManifest: Codable, Equatable {
     public let binary: String              // só nome de arquivo: sem "/" e sem ".."
     /// Versão mínima do macOS ("15.0"), opcional. Conferida antes do dlopen: dylib feito para um macOS mais novo não carrega.
     public let minMacOS: String?
+    /// Nome que aparece (opcional): `name` continua sendo a pasta e o asset. NeyHub antigo ignora.
+    public let displayName: String?
+    public var title: String { displayName.map { $0.trimmingCharacters(in: .whitespaces) }.flatMap { $0.isEmpty ? nil : $0 } ?? name }
 
-    private enum CodingKeys: String, CodingKey { case id, name, version, contract, hasScreen, permissions, binary, minMacOS }
+    private enum CodingKeys: String, CodingKey { case id, name, version, contract, hasScreen, permissions, binary, minMacOS, displayName }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -43,6 +46,7 @@ public struct PluginManifest: Codable, Equatable {
         version = try c.decode(String.self, forKey: .version); contract = try c.decode(Int.self, forKey: .contract)
         hasScreen = try c.decode(Bool.self, forKey: .hasScreen); binary = try c.decode(String.self, forKey: .binary)
         minMacOS = try c.decodeIfPresent(String.self, forKey: .minMacOS)
+        displayName = try c.decodeIfPresent(String.self, forKey: .displayName)
         // Permissão de um NeyHub mais novo não pode impedir o carregamento: descarta e avisa no log.
         let raw = try c.decode([String].self, forKey: .permissions)
         let known = raw.compactMap(Permission.init(rawValue:))

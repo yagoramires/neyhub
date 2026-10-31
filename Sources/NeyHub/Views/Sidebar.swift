@@ -65,8 +65,8 @@ struct Sidebar: View {
             item(.permissions, title: "Permissões", dot: model.missingPermission) { symbol("lock.shield") }
             GSectionLabel("Instalados").padding(.horizontal, 6).padding(.top, 10).padding(.bottom, 4)
             ForEach(model.sidebarApps, id: \.manifest.id) { plugin in
-                item(.app(plugin.manifest.id), title: plugin.manifest.name) {
-                    AppIcon(name: plugin.manifest.name, id: plugin.manifest.id, size: 18)
+                item(.app(plugin.manifest.id), title: plugin.manifest.title) {
+                    AppIcon(name: plugin.manifest.title, id: plugin.manifest.id, size: 18)
                 }
             }
             Spacer(minLength: 0)

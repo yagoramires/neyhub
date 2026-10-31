@@ -107,7 +107,7 @@ enum PluginHost {
         case .success(let p):
             let id = p.manifest.id
             guard let other = conflict(id: id) else { return begin(p, model: model) }
-            offerClose(other, name: p.manifest.name) { closed in
+            offerClose(other, name: p.manifest.title) { closed in
                 // Durante a espera: outro avulso pode ter aberto ou a pessoa pode ter desinstalado.
                 if model.store.isMarkedForRemoval(id) { return }
                 if closed, conflict(id: id) == nil { begin(p, model: model) } else { pause(p, model: model) }
@@ -181,7 +181,7 @@ enum PluginHost {
                               !handlesConflictItself(app.bundleURL) else { continue }
                         let id = p.manifest.id
                         guard alerting.insert(id).inserted else { continue }
-                        offerClose(app, name: p.manifest.name) { closed in
+                        offerClose(app, name: p.manifest.title) { closed in
                             alerting.remove(id)
                             // Desinstalado enquanto isso já levou stop(): nunca duas vezes.
                             guard !closed, model.loaded.contains(where: { $0.manifest.id == id }) else { return }

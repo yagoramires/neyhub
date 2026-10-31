@@ -5,16 +5,20 @@ import NeyKit
 /// `soon` (opcional no JSON): card "Em breve", ainda sem release.
 struct CatalogEntry: Codable, Equatable {
     let id, name, repo, summary: String; let hasScreen: Bool; var soon = false
+    /// Nome que aparece (opcional); `name` continua sendo o asset e a pasta.
+    var displayName: String? = nil
+    var title: String { displayName.map { $0.trimmingCharacters(in: .whitespaces) }.flatMap { $0.isEmpty ? nil : $0 } ?? name }
 
-    init(id: String, name: String, repo: String, summary: String, hasScreen: Bool, soon: Bool = false) {
-        (self.id, self.name, self.repo, self.summary, self.hasScreen, self.soon) = (id, name, repo, summary, hasScreen, soon)
+    init(id: String, name: String, repo: String, summary: String, hasScreen: Bool, soon: Bool = false, displayName: String? = nil) {
+        (self.id, self.name, self.repo, self.summary, self.hasScreen, self.soon, self.displayName) = (id, name, repo, summary, hasScreen, soon, displayName)
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.init(id: try c.decode(String.self, forKey: .id), name: try c.decode(String.self, forKey: .name), repo: try c.decode(String.self, forKey: .repo),
                   summary: try c.decode(String.self, forKey: .summary), hasScreen: try c.decode(Bool.self, forKey: .hasScreen),
-                  soon: try c.decodeIfPresent(Bool.self, forKey: .soon) ?? false)
+                  soon: try c.decodeIfPresent(Bool.self, forKey: .soon) ?? false,
+                  displayName: try c.decodeIfPresent(String.self, forKey: .displayName))
     }
 }
 

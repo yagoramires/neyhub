@@ -258,10 +258,10 @@ struct StoreAction: View {
             Text("Em breve").font(.system(size: 10, weight: .bold)).foregroundStyle(Grafite.muted)
                 .padding(.horizontal, 9).padding(.vertical, 4)
                 .overlay(Capsule().stroke(Grafite.ghostBorder, lineWidth: 1))
-                .accessibilityLabel("\(entry.name), em breve")
-        case .install: GPill(title: "Instalar") { model.install(entry) }.accessibilityLabel("Instalar \(entry.name)")
-        case .update: GPill(title: "Atualizar") { model.update(entry) }.accessibilityLabel("Atualizar \(entry.name)")
-        case .open: GPill(title: "Abrir", style: .ghost) { open() }.accessibilityLabel("Abrir \(entry.name)")
+                .accessibilityLabel("\(entry.title), em breve")
+        case .install: GPill(title: "Instalar") { model.install(entry) }.accessibilityLabel("Instalar \(entry.title)")
+        case .update: GPill(title: "Atualizar") { model.update(entry) }.accessibilityLabel("Atualizar \(entry.title)")
+        case .open: GPill(title: "Abrir", style: .ghost) { open() }.accessibilityLabel("Abrir \(entry.title)")
         case .none: EmptyView()
         }
     }
@@ -282,7 +282,7 @@ struct StoreCard: View {
             if entry.soon { header } else {
                 Button { model.detail = entry.id } label: { header.contentShape(Rectangle()) }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("\(entry.name), \(entry.summary), \(model.status(entry))")
+                    .accessibilityLabel("\(entry.title), \(entry.summary), \(model.status(entry))")
                     .accessibilityHint("Abre os detalhes")
             }
             HStack(spacing: 5) {
@@ -300,7 +300,7 @@ struct StoreCard: View {
                 Spacer(minLength: 0)
                 if model.installed[entry.id] != nil {
                     Text("Barra de menus").font(.system(size: 11)).foregroundStyle(Grafite.muted)
-                    GSwitch(isOn: menuBar, label: "Barra de menus do \(entry.name)")
+                    GSwitch(isOn: menuBar, label: "Barra de menus do \(entry.title)")
                 }
                 StoreAction(model: model, entry: entry)
             }
@@ -313,9 +313,9 @@ struct StoreCard: View {
 
     private var header: some View {
         HStack(alignment: .top, spacing: 12) {
-            AppIcon(name: entry.name, id: entry.id, size: 48)
+            AppIcon(name: entry.title, id: entry.id, size: 48)
             VStack(alignment: .leading, spacing: 3) {
-                Text(entry.name).font(.system(size: 14, weight: .bold)).foregroundStyle(Grafite.strong)
+                Text(entry.title).font(.system(size: 14, weight: .bold)).foregroundStyle(Grafite.strong)
                 Text(entry.summary).font(.system(size: 12)).foregroundStyle(Grafite.muted)
                     .lineLimit(2).fixedSize(horizontal: false, vertical: true)
             }

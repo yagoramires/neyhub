@@ -23,8 +23,10 @@ const glyph = {
           <g stroke="${W}" stroke-width="48" stroke-linecap="round"><path d="M420 330h200M420 494h200"/></g>`,
   deck: [0, 1, 2].flatMap(r => [0, 1, 2].map(c =>
           `<rect x="${172 + c * 170}" y="${172 + r * 170}" width="140" height="140" rx="32" fill="${r === 1 && c === 1 ? L : W}" fill-opacity="${r === 1 && c === 1 ? 1 : .85}"/>`)).join(""),
-  hub: `<path d="M196 404L412 214l216 190v202q0 28-28 28H224q-28 0-28-28z" fill="none" stroke="${W}" stroke-width="50" stroke-linejoin="round"/>
-        <circle cx="412" cy="486" r="64" fill="${L}"/>`,
+  // Lucide house-wifi (lucide-static 1.65.0), sem redesenho: casa branca, sinal verde-limão.
+  hub: `<g transform="translate(412 412) scale(23) translate(-12 -11.5)" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="${W}"/>
+          <g stroke="${L}"><path d="M9.5 13.866a4 4 0 0 1 5 .01"/><path d="M12 17h.01"/><path d="M7 10.754a8 8 0 0 1 10 0"/></g></g>`,
 };
 const g = glyph[location.hash.slice(1)];
 document.body.innerHTML = `<svg width="1024" height="1024" viewBox="0 0 1024 1024">
