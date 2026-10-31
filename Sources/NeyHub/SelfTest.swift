@@ -28,7 +28,10 @@ enum SelfTest {
         let d = UserDefaults(suiteName: suite)!
         d.removePersistentDomain(forName: suite)
         defer { d.removePersistentDomain(forName: suite) }
-        precondition(HubPresence.load(d) == HubPresence(dock: true, menuBar: true))
+        precondition(HubPresence.load(d) == HubPresence(dock: false, menuBar: true), "padrão: fora do Dock com a janela fechada")
+        d.set(true, forKey: "presence.dock")
+        precondition(HubPresence.load(d).dock, "quem ligou o Dock continua com ele")
+        d.removeObject(forKey: "presence.dock")
         precondition(HubPresence(dock: true, menuBar: true).setting(dock: false) == HubPresence(dock: false, menuBar: true))
         precondition(HubPresence(dock: false, menuBar: true).setting(menuBar: false) == HubPresence(dock: true, menuBar: false))
         precondition(HubPresence(dock: true, menuBar: false).setting(dock: false) == HubPresence(dock: false, menuBar: true))
@@ -40,9 +43,7 @@ enum SelfTest {
         let c = HubPresenceController(defaults: d)
         let items = c.toggleItems()
         func states() -> [NSControl.StateValue] { items.map { _ = c.validateMenuItem($0); return $0.state } }
-        precondition(items.map(\.title) == ["Mostrar ícone no Dock", "Mostrar ícone na barra de menus"] && states() == [.on, .on])
-        c.toggleDock()
-        precondition(states() == [.off, .on] && d.bool(forKey: "presence.dock") == false && d.bool(forKey: "presence.menuBar"))
+        precondition(items.map(\.title) == ["Mostrar ícone no Dock", "Mostrar ícone na barra de menus"] && states() == [.off, .on])
         c.toggleMenuBar() // o Dock já está apagado: volta sozinho
         precondition(states() == [.on, .off] && d.bool(forKey: "presence.dock") && !d.bool(forKey: "presence.menuBar"))
         precondition(HubPresence.load(d) == HubPresence(dock: true, menuBar: false) && HubPresenceController(defaults: d).presence.menuBar == false)

@@ -3,10 +3,10 @@ import NeyKit
 
 /// Onde o próprio NeyHub aparece: ícone no Dock e/ou na barra de menus. Nunca os dois apagados.
 struct HubPresence: Equatable {
-    var dock = true, menuBar = true
+    var dock = false, menuBar = true
 
     static func load(_ d: UserDefaults) -> HubPresence {
-        HubPresence(dock: d.object(forKey: "presence.dock") as? Bool ?? true,
+        HubPresence(dock: d.object(forKey: "presence.dock") as? Bool ?? false,
                     menuBar: d.object(forKey: "presence.menuBar") as? Bool ?? true).normalized
     }
 
