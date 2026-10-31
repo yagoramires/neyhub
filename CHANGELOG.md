@@ -2,6 +2,11 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [Não lançado]
+### Adicionado
+- Tela **Ajustes** na barra lateral: ícone no Dock, ícone na barra de menus e Acordado na barra de menus. Antes só davam pelos menus, e quem escondia o ícone da barra não achava como trazer de volta.
+- **Desinstalar** no topo da tela de cada app, ao lado do modo de exibição.
+
 ## [0.2.0] - 2026-10-31
 ### Alterado
 - Fechar a janela tira o NeyHub do Dock: ele continua rodando só na barra de menus, como o OrbStack. Para deixar o ícone sempre no Dock, ligue **Mostrar ícone no Dock** no menu do ícone da barra de menus (quem já tinha ligado continua com ele).

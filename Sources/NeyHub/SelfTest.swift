@@ -51,6 +51,8 @@ enum SelfTest {
         c.toggleMenuBar() // o Dock já está apagado: volta sozinho
         precondition(states() == [.on, .off] && d.bool(forKey: "presence.dock") && !d.bool(forKey: "presence.menuBar"))
         precondition(HubPresence.load(d) == HubPresence(dock: true, menuBar: false) && HubPresenceController(defaults: d).presence.menuBar == false)
+        c.set(c.presence.setting(menuBar: true)) // caminho da tela Ajustes
+        precondition(c.presence == HubPresence(dock: true, menuBar: true) && d.bool(forKey: "presence.menuBar"))
         d.set(false, forKey: "presence.dock") // salvo à mão com os dois apagados
         precondition(HubPresence.load(d) == HubPresence(dock: false, menuBar: true))
         let menu = c.statusMenu()

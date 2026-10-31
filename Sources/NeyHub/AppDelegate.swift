@@ -8,7 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let model: HubModel
     lazy var notifications = Notifications(model: model)
     private var window: NSWindow?
-    let presence = HubPresenceController()
+    var presence: HubPresenceController { model.presence }
     private var awakeItem: AwakeStatusItem?
     private var awakeSub: AnyCancellable?
     private var updateTimer: Timer?

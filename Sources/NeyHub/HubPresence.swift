@@ -26,11 +26,11 @@ struct HubPresence: Equatable {
     func policy(windowOpen: Bool) -> NSApplication.ActivationPolicy { windowOpen || dock ? .regular : .accessory }
 }
 
-/// Ícone do NeyHub na barra de menus + as duas opções (menu do ícone e menu "NeyHub").
+/// Ícone do NeyHub na barra de menus + as duas opções (menu do ícone, menu "NeyHub" e tela Ajustes).
 /// Só mexe em NSStatusBar/NSApp depois do `install()`: o selftest usa defaults isoladas sem tocar no sistema.
-final class HubPresenceController: NSObject, NSMenuItemValidation {
+final class HubPresenceController: NSObject, NSMenuItemValidation, ObservableObject {
     private let defaults: UserDefaults
-    private(set) var presence: HubPresence
+    @Published private(set) var presence: HubPresence
     private var windowOpen = false
     private var live = false
     private var item: NSStatusItem?
@@ -66,7 +66,7 @@ final class HubPresenceController: NSObject, NSMenuItemValidation {
     @objc func toggleMenuBar() { set(presence.setting(menuBar: !presence.menuBar)) }
     @objc private func open() { onOpen() }
 
-    private func set(_ p: HubPresence) {
+    func set(_ p: HubPresence) {
         presence = p
         p.save(defaults)
         apply()

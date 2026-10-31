@@ -44,7 +44,7 @@ final class AwakeModel: ObservableObject {
     }
 }
 
-/// Switch do rodapé da sidebar. Opção da barra de menus no menu de contexto (NeyHub ainda não tem tela de ajustes).
+/// Switch do rodapé da sidebar. Opção da barra de menus no menu de contexto e na tela Ajustes.
 struct AwakeSwitch: View {
     @ObservedObject var awake: AwakeModel
 

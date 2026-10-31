@@ -27,11 +27,11 @@ Um app que ainda não tem release aparece na Loja como **Em breve**, sem o botã
 2. Abra o NeyHub. Ele é assinado com um certificado próprio, não com um certificado pago da Apple, então na primeira vez o macOS avisa que não conseguiu verificar o desenvolvedor. Vá em **Ajustes do Sistema → Privacidade e Segurança**, role até o fim e clique em **Abrir Mesmo Assim**. No macOS 14 também dá para clicar com o botão direito no app → **Abrir** (a partir do macOS 15 esse atalho não libera mais o app). Só na primeira vez.
 3. Na **Loja**, clique em **Instalar** no card do app. O NeyHub baixa o pacote do GitHub, confere a assinatura e o app já começa a rodar.
 
-O NeyHub entra nos itens de login na primeira vez que abre e continua rodando quando você fecha a janela (os apps dele, como o Aero, precisam ficar ativos). Com a janela fechada ele sai do Dock e fica só na barra de menus; para deixar o ícone sempre no Dock, ligue **Mostrar ícone no Dock** no menu do ícone da barra de menus. Para sair de verdade: **NeyHub → Sair do NeyHub** (`⌘Q`). Abrir o NeyHub de novo com ele já aberto só traz a janela de volta.
+O NeyHub entra nos itens de login na primeira vez que abre e continua rodando quando você fecha a janela (os apps dele, como o Aero, precisam ficar ativos). Com a janela fechada ele sai do Dock e fica só na barra de menus; para deixar o ícone sempre no Dock, ligue **Ícone no Dock** em **Ajustes** (também está no menu do ícone da barra de menus e no menu **NeyHub**). Para sair de verdade: **NeyHub → Sair do NeyHub** (`⌘Q`). Abrir o NeyHub de novo com ele já aberto só traz a janela de volta.
 
 Se o app avulso estiver aberto, o NeyHub pergunta antes de iniciar o plugin: **Fechar** encerra o avulso e segue pelo NeyHub; **Agora não** deixa o app pausado no card. Pausado ao abrir o NeyHub, ele começa sozinho assim que o avulso fechar. Pausado com o app em uso, ele só volta reiniciando: o card mostra **Pausado — reinicie o NeyHub para voltar** com o botão **Reiniciar NeyHub**.
 
-Para desinstalar um app, abra o card dele na Loja e clique em **Desinstalar**: ele para na hora, os avisos dele saem da Central de Notificações e a pasta some no próximo início. Reinstalar na mesma sessão também fica para o próximo início. Sair ou reiniciar o NeyHub não apaga os avisos.
+Para desinstalar um app, clique em **Desinstalar** no topo da tela dele ou no card dele na Loja: ele para na hora, os avisos dele saem da Central de Notificações e a pasta some no próximo início. Reinstalar na mesma sessão também fica para o próximo início. Sair ou reiniciar o NeyHub não apaga os avisos.
 
 Requer macOS 14 ou mais novo, Apple Silicon ou Intel. O Domo exige macOS 15: num macOS 14 o card dele mostra **Precisa do macOS 15.0**.
 
@@ -58,13 +58,14 @@ O login do SmartThings no Domo volta para o Mac por um link `hubmac://`, e quem 
 ## Como usar
 
 - **Loja**: o catálogo de apps. Cada card mostra a versão instalada ou disponível e a ação **Instalar**, **Atualizar** ou **Abrir**. Clicar no card abre o detalhe: modo de exibição, configurações do app, novidades de cada versão e **Desinstalar**.
-- **Instalados** (barra lateral): os apps com tela. Clicar abre a tela do app dentro da janela do NeyHub, com o modo de exibição no topo.
+- **Instalados** (barra lateral): os apps com tela. Clicar abre a tela do app dentro da janela do NeyHub, com o modo de exibição e **Desinstalar** no topo.
+- **Ajustes** (barra lateral): onde o NeyHub aparece. Ícone no Dock, ícone na barra de menus (nunca os dois desligados) e Acordado na barra de menus.
 - A janela abre com 1100 × 680 na primeira vez (a Casa do Domo cabe em 3 colunas) e depois lembra o tamanho e a posição.
 - **Acordado** (rodapé da barra lateral): não deixa o Mac dormir, nem com a tampa fechada. Fica verde quando ligado.
   - Na primeira vez que você liga, o macOS pede sua senha de administrador **uma vez**. O NeyHub instala uma regra em `/etc/sudoers.d/neyhub` que libera só dois comandos, `pmset -a disablesleep 1` e `pmset -a disablesleep 0`, sem senha, só para o seu usuário. Depois disso ligar e desligar não pede mais nada.
   - Só desliga quando você manda. Fechar a janela ou sair do NeyHub não desliga.
   - O switch mostra sempre o estado real do sistema (`pmset -g`), não um valor guardado.
-  - Clique com o botão direito no switch para **Mostrar Acordado na barra de menus**.
+  - Para mostrar o Acordado na barra de menus, ligue em **Ajustes** ou clique com o botão direito no switch.
   - Conflito conhecido: outro app que também mexe no `pmset disablesleep` pode religar o sono por conta própria e desfazer o Acordado sem aviso. Como o switch lê o estado do sistema, ele mostra a mudança. É só ligar de novo.
 
 ## Atalhos

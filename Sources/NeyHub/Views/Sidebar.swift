@@ -4,7 +4,7 @@ import NeyKit
 import NeyKitApp
 import SwiftUI
 
-enum Route: Hashable { case store, permissions, app(String) }
+enum Route: Hashable { case store, permissions, settings, app(String) }
 
 final class HubModel: ObservableObject {
     @Published var route: Route = .store
@@ -15,6 +15,8 @@ final class HubModel: ObservableObject {
     /// Tela de cada plugin, criada uma vez: trocar de item na sidebar não recria.
     var screens: [String: NSViewController] = [:]
     let awake = AwakeModel()
+    /// Dock e barra de menus do próprio NeyHub; o AppDelegate instala, a tela Ajustes mexe.
+    let presence = HubPresenceController()
     /// Ponte entregue a cada plugin em `start(host:)`.
     let host = HostBridge()
     /// O AppDelegate liga ao `Notifications`; o selftest conta as chamadas (sem tocar no centro de notificações real).
@@ -63,6 +65,7 @@ struct Sidebar: View {
                 .padding(.horizontal, 6).padding(.bottom, 10)
             item(.store, title: "Loja") { symbol("bag") }
             item(.permissions, title: "Permissões", dot: model.missingPermission) { symbol("lock.shield") }
+            item(.settings, title: "Ajustes") { symbol("gearshape") }
             GSectionLabel("Instalados").padding(.horizontal, 6).padding(.top, 10).padding(.bottom, 4)
             ForEach(model.sidebarApps, id: \.manifest.id) { plugin in
                 item(.app(plugin.manifest.id), title: plugin.manifest.title) {
@@ -117,6 +120,7 @@ struct RootView: View {
             Sidebar(model: model)
             switch model.route {
             case .permissions: PermissionsView(model: model)
+            case .settings: SettingsView(presence: model.presence, awake: model.awake)
             case .app(let id):
                 if let p = model.loaded.first(where: { $0.manifest.id == id }) { AppScreen(model: model, plugin: p).id(id) } else { store }
             case .store: store

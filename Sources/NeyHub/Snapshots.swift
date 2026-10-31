@@ -77,6 +77,8 @@ enum Snapshots {
         perms.granted = [.accessibility: true, .screenRecording: false, .notifications: false]
         perms.route = .permissions
         saveHosted(RootView(model: perms), as: "permissions.png", in: folder)
+        perms.route = .settings
+        saveHosted(RootView(model: perms), as: "settings.png", in: folder)
         print("ok \(folder.path)")
     }
 

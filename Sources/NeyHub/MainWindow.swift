@@ -21,7 +21,7 @@ enum MainWindow {
     }
 }
 
-/// Tela de um plugin dentro da janela: nome e modo no topo, a tela do plugin embaixo.
+/// Tela de um plugin dentro da janela: nome, modo e Desinstalar no topo, a tela do plugin embaixo.
 struct AppScreen: View {
     @ObservedObject var model: HubModel
     let plugin: LoadedPlugin
@@ -35,6 +35,9 @@ struct AppScreen: View {
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
                 PresencePicker(model: model, id: m.id, name: m.title, hasScreen: m.hasScreen)
+                Rectangle().fill(Grafite.border).frame(width: 1, height: 16).padding(.horizontal, 4).accessibilityHidden(true)
+                GPill(title: "Desinstalar", style: .ghost) { model.uninstall(m.id) }
+                    .accessibilityLabel("Desinstalar \(m.title)")
             }
             if let screen = model.screen(for: plugin) {
                 PluginViewHost(make: { screen }).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
