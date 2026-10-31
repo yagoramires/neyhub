@@ -44,6 +44,10 @@ enum SelfTest {
         let items = c.toggleItems()
         func states() -> [NSControl.StateValue] { items.map { _ = c.validateMenuItem($0); return $0.state } }
         precondition(items.map(\.title) == ["Mostrar ícone no Dock", "Mostrar ícone na barra de menus"] && states() == [.off, .on])
+        c.toggleDock()
+        precondition(states() == [.on, .on] && d.bool(forKey: "presence.dock") && d.bool(forKey: "presence.menuBar"))
+        c.toggleDock()
+        precondition(states() == [.off, .on] && d.object(forKey: "presence.dock") as? Bool == false)
         c.toggleMenuBar() // o Dock já está apagado: volta sozinho
         precondition(states() == [.on, .off] && d.bool(forKey: "presence.dock") && !d.bool(forKey: "presence.menuBar"))
         precondition(HubPresence.load(d) == HubPresence(dock: true, menuBar: false) && HubPresenceController(defaults: d).presence.menuBar == false)
@@ -706,7 +710,7 @@ extension SelfTest {
 
         // Só applyPending troca, e informa o que trocou com as notas (que ficam até serem mostradas).
         let applied = store.applyPending()
-        precondition(applied == [AppliedUpdate(name: "Hello", version: "1.0.0", notes: "- novo")], "\(applied)")
+        precondition(applied == [AppliedUpdate(name: "Hello", title: "Hello", version: "1.0.0", notes: "- novo")], "\(applied)")
         precondition(PluginStore.manifest(at: installed)?.version == "1.0.0" && store.stagedVersions().isEmpty)
         let stagedDir = root.appendingPathComponent("Staged")
         precondition(try! fm.contentsOfDirectory(atPath: stagedDir.path) == ["Hello.notes.md"], "notas somem antes de mostrar")

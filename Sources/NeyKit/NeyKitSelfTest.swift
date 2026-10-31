@@ -50,7 +50,7 @@ public enum NeyKitSelfTest {
         let hub = try! JSONDecoder().decode(PluginManifest.self, from: Data(#"{"id":"local.hub","name":"Hub","displayName":"Domo","version":"1.0.0","contract":1,"hasScreen":true,"permissions":[],"binary":"libHubPlugin.dylib"}"#.utf8))
         precondition(hub.name == "Hub" && hub.title == "Domo" && hub.isValid)
         precondition(m.title == "Hello", "sem displayName: o name")
-        let blank = try! JSONDecoder().decode(PluginManifest.self, from: Data(#"{"id":"local.x","name":"X","displayName":" ","version":"1.0.0","contract":1,"hasScreen":true,"permissions":[],"binary":"x"}"#.utf8))
+        let blank = try! JSONDecoder().decode(PluginManifest.self, from: Data(#"{"id":"local.x","name":"X","displayName":" \n","version":"1.0.0","contract":1,"hasScreen":true,"permissions":[],"binary":"x"}"#.utf8))
         precondition(blank.title == "X", "displayName em branco: o name")
         precondition(neyPluginContractVersion == 1)
     }

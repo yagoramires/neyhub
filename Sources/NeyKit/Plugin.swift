@@ -36,7 +36,11 @@ public struct PluginManifest: Codable, Equatable {
     public let minMacOS: String?
     /// Nome que aparece (opcional): `name` continua sendo a pasta e o asset. NeyHub antigo ignora.
     public let displayName: String?
-    public var title: String { displayName.map { $0.trimmingCharacters(in: .whitespaces) }.flatMap { $0.isEmpty ? nil : $0 } ?? name }
+    public var title: String { Self.title(displayName, name: name) }
+    /// displayName sem espaços/quebras nas pontas; vazio ou ausente → name. O catálogo usa a mesma regra.
+    public static func title(_ displayName: String?, name: String) -> String {
+        displayName.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.flatMap { $0.isEmpty ? nil : $0 } ?? name
+    }
 
     private enum CodingKeys: String, CodingKey { case id, name, version, contract, hasScreen, permissions, binary, minMacOS, displayName }
 

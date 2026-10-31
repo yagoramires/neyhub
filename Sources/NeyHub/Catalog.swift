@@ -7,7 +7,7 @@ struct CatalogEntry: Codable, Equatable {
     let id, name, repo, summary: String; let hasScreen: Bool; var soon = false
     /// Nome que aparece (opcional); `name` continua sendo o asset e a pasta.
     var displayName: String? = nil
-    var title: String { displayName.map { $0.trimmingCharacters(in: .whitespaces) }.flatMap { $0.isEmpty ? nil : $0 } ?? name }
+    var title: String { PluginManifest.title(displayName, name: name) }
 
     init(id: String, name: String, repo: String, summary: String, hasScreen: Bool, soon: Bool = false, displayName: String? = nil) {
         (self.id, self.name, self.repo, self.summary, self.hasScreen, self.soon, self.displayName) = (id, name, repo, summary, hasScreen, soon, displayName)
