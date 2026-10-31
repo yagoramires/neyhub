@@ -4,7 +4,7 @@ import NeyKit
 enum StageError: Error, Equatable { case download, manifest, contract(Int), signature }
 
 /// Plugin que o `applyPending` trocou neste início, com as notas guardadas no preparo.
-struct AppliedUpdate: Equatable { let name, version, notes: String }
+struct AppliedUpdate: Equatable { let name, title, version, notes: String } // name: arquivo das notas; title: o que aparece
 
 /// Pastas do NeyHub: `Plugins/<Nome>.neyplugin` (instalados), `Staged/<Nome>.neyplugin` (entram no próximo início),
 /// `Incoming/<uuid>/` (download em andamento), `Remove/<id>` (marcador de desinstalação).
@@ -159,7 +159,7 @@ final class PluginStore {
             do {
                 if fm.fileExists(atPath: dest.path) {
                     _ = try fm.replaceItemAt(dest, withItemAt: staged)
-                    if let m = Self.manifest(at: dest) { applied.append(AppliedUpdate(name: m.name, version: m.version, notes: notes)) }
+                    if let m = Self.manifest(at: dest) { applied.append(AppliedUpdate(name: m.name, title: m.title, version: m.version, notes: notes)) }
                 } else { try fm.moveItem(at: staged, to: dest) }
             } catch {
                 NSLog("NeyHub: não deu pra aplicar \(staged.lastPathComponent): \(error)")

@@ -25,9 +25,9 @@ struct AppDetailView: View {
                 .accessibilityLabel("Voltar para a Loja")
 
                 HStack(spacing: 10) {
-                    AppIcon(name: entry.name, id: entry.id, size: 40)
+                    AppIcon(name: entry.title, id: entry.id, size: 40)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.name).font(.system(size: 16, weight: .semibold)).foregroundStyle(Grafite.strong)
+                        Text(entry.title).font(.system(size: 16, weight: .semibold)).foregroundStyle(Grafite.strong)
                             .accessibilityAddTraits(.isHeader)
                         Text(model.status(entry)).font(.system(size: 11)).foregroundStyle(Grafite.muted)
                     }
@@ -35,7 +35,7 @@ struct AppDetailView: View {
                     StoreAction(model: model, entry: entry)
                     if model.installed[entry.id] != nil {
                         GPill(title: "Desinstalar", style: .ghost) { model.uninstall(entry.id) }
-                            .accessibilityLabel("Desinstalar \(entry.name)")
+                            .accessibilityLabel("Desinstalar \(entry.title)")
                     }
                 }
                 Text(entry.summary).font(.system(size: 12))
@@ -43,7 +43,7 @@ struct AppDetailView: View {
 
                 if model.installed[entry.id] != nil {
                     GSectionLabel("Modo")
-                    PresencePicker(model: model, id: entry.id, name: entry.name, hasScreen: entry.hasScreen)
+                    PresencePicker(model: model, id: entry.id, name: entry.title, hasScreen: entry.hasScreen)
                 }
                 if let plugin {
                     GSectionLabel("Configurações")

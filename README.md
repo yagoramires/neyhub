@@ -6,7 +6,7 @@ Loja e hub dos meus apps de barra de menus do macOS: instala, atualiza e usa cad
 
 [Baixar a última versão](https://github.com/yagoramires/neyhub/releases/latest) · [Reportar problema](https://github.com/yagoramires/neyhub/issues/new)
 
-![O NeyHub com os seis apps instalados: Loja, as telas do Dose, Deck, Pauta e Hub, e Permissões](docs/tour.gif)
+![O NeyHub com os seis apps instalados: Loja, as telas do Dose, Deck, Pauta e Domo, e Permissões](docs/tour.gif)
 
 Cada app continua sendo um repositório separado e funciona sozinho, fora do NeyHub. Na 0.1.0 a Loja tem seis:
 
@@ -17,7 +17,7 @@ Cada app continua sendo um repositório separado e funciona sozinho, fora do Ney
 | [Capture](https://github.com/yagoramires/capture) | Prints e gravação de tela pela barra de menus (só barra de menus). |
 | [Deck](https://github.com/yagoramires/deck) | Configura o fifine AmpliGame D6 (barra de menus e tela). |
 | [Pauta](https://github.com/yagoramires/pauta) | Slack, GitHub e Jira num lugar só (barra de menus e tela). |
-| [Hub](https://github.com/yagoramires/hub) | Casa conectada: Tuya, SmartThings e Android TV (barra de menus e tela). Exige macOS 15. |
+| [Domo](https://github.com/yagoramires/hub) | Casa conectada: Tuya, SmartThings e Android TV (barra de menus e tela). Exige macOS 15. Antes se chamava Hub (o repositório e os arquivos continuam com esse nome). |
 
 Um app que ainda não tem release aparece na Loja como **Em breve**, sem o botão **Instalar**.
 
@@ -27,13 +27,13 @@ Um app que ainda não tem release aparece na Loja como **Em breve**, sem o botã
 2. Abra o NeyHub. Ele é assinado com um certificado próprio, não com um certificado pago da Apple, então na primeira vez o macOS avisa que não conseguiu verificar o desenvolvedor. Vá em **Ajustes do Sistema → Privacidade e Segurança**, role até o fim e clique em **Abrir Mesmo Assim**. No macOS 14 também dá para clicar com o botão direito no app → **Abrir** (a partir do macOS 15 esse atalho não libera mais o app). Só na primeira vez.
 3. Na **Loja**, clique em **Instalar** no card do app. O NeyHub baixa o pacote do GitHub, confere a assinatura e o app já começa a rodar.
 
-O NeyHub entra nos itens de login na primeira vez que abre e continua rodando quando você fecha a janela (os apps dele, como o Aero, precisam ficar ativos). Para sair de verdade: **NeyHub → Sair do NeyHub** (`⌘Q`). Abrir o NeyHub de novo com ele já aberto só traz a janela de volta.
+O NeyHub entra nos itens de login na primeira vez que abre e continua rodando quando você fecha a janela (os apps dele, como o Aero, precisam ficar ativos). Com a janela fechada ele sai do Dock e fica só na barra de menus; para deixar o ícone sempre no Dock, ligue **Mostrar ícone no Dock** no menu do ícone da barra de menus. Para sair de verdade: **NeyHub → Sair do NeyHub** (`⌘Q`). Abrir o NeyHub de novo com ele já aberto só traz a janela de volta.
 
 Se o app avulso estiver aberto, o NeyHub pergunta antes de iniciar o plugin: **Fechar** encerra o avulso e segue pelo NeyHub; **Agora não** deixa o app pausado no card. Pausado ao abrir o NeyHub, ele começa sozinho assim que o avulso fechar. Pausado com o app em uso, ele só volta reiniciando: o card mostra **Pausado — reinicie o NeyHub para voltar** com o botão **Reiniciar NeyHub**.
 
 Para desinstalar um app, abra o card dele na Loja e clique em **Desinstalar**: ele para na hora, os avisos dele saem da Central de Notificações e a pasta some no próximo início. Reinstalar na mesma sessão também fica para o próximo início. Sair ou reiniciar o NeyHub não apaga os avisos.
 
-Requer macOS 14 ou mais novo, Apple Silicon ou Intel. O Hub exige macOS 15: num macOS 14 o card dele mostra **Precisa do macOS 15.0**.
+Requer macOS 14 ou mais novo, Apple Silicon ou Intel. O Domo exige macOS 15: num macOS 14 o card dele mostra **Precisa do macOS 15.0**.
 
 ## Permissões
 
@@ -45,7 +45,7 @@ A tela lista só as permissões que algum app instalado usa:
 - **Notificações**: para os lembretes do Dose e os avisos do Pauta. Os avisos de todos os apps passam pelo NeyHub, e o toque leva ao app (mesmo quando o toque é que abre o NeyHub).
 - **Gravação de Tela**: para o Capture.
 - **Microfone**: só para o Capture com **Gravar o microfone** ligado. Aparece como **opcional** e não acende o ponto da barra lateral; o próprio Capture avisa quando falta.
-- **Rede local**: para o Hub achar e controlar a Android TV. Não aparece na tela: o macOS pergunta sozinho na primeira vez que o Hub procura a TV.
+- **Rede local**: para o Domo achar e controlar a Android TV. Não aparece na tela: o macOS pergunta sozinho na primeira vez que o Domo procura a TV.
 
 Nenhum app pede permissão no meio do uso: quando falta, ele mostra o aviso e leva para essa tela. Um ponto ao lado de **Permissões** na barra lateral avisa que falta alguma.
 
@@ -53,13 +53,13 @@ O app avulso (fora do NeyHub) continua com as permissões dele, à parte.
 
 ## Retorno de login
 
-O login do SmartThings no Hub volta para o Mac por um link `hubmac://`, e quem atende é o NeyHub: ele entrega ao Hub que roda dentro dele. Se o Hub avulso estiver aberto (o plugin fica pausado), o NeyHub repassa o link para ele. Se nenhum app esperava o login, aparece **Nenhum app esperava este login**; é só abrir o app que pediu e tentar de novo. Um link que chega enquanto o NeyHub ainda está abrindo espera os apps iniciarem.
+O login do SmartThings no Domo volta para o Mac por um link `hubmac://`, e quem atende é o NeyHub: ele entrega ao Domo que roda dentro dele. Se o Domo avulso estiver aberto (o plugin fica pausado), o NeyHub repassa o link para ele. Se nenhum app esperava o login, aparece **Nenhum app esperava este login**; é só abrir o app que pediu e tentar de novo. Um link que chega enquanto o NeyHub ainda está abrindo espera os apps iniciarem.
 
 ## Como usar
 
 - **Loja**: o catálogo de apps. Cada card mostra a versão instalada ou disponível e a ação **Instalar**, **Atualizar** ou **Abrir**. Clicar no card abre o detalhe: modo de exibição, configurações do app, novidades de cada versão e **Desinstalar**.
 - **Instalados** (barra lateral): os apps com tela. Clicar abre a tela do app dentro da janela do NeyHub, com o modo de exibição no topo.
-- A janela abre com 1100 × 680 na primeira vez (a Casa do Hub cabe em 3 colunas) e depois lembra o tamanho e a posição.
+- A janela abre com 1100 × 680 na primeira vez (a Casa do Domo cabe em 3 colunas) e depois lembra o tamanho e a posição.
 - **Acordado** (rodapé da barra lateral): não deixa o Mac dormir, nem com a tampa fechada. Fica verde quando ligado.
   - Na primeira vez que você liga, o macOS pede sua senha de administrador **uma vez**. O NeyHub instala uma regra em `/etc/sudoers.d/neyhub` que libera só dois comandos, `pmset -a disablesleep 1` e `pmset -a disablesleep 0`, sem senha, só para o seu usuário. Depois disso ligar e desligar não pede mais nada.
   - Só desliga quando você manda. Fechar a janela ou sair do NeyHub não desliga.

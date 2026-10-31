@@ -28,7 +28,10 @@ enum SelfTest {
         let d = UserDefaults(suiteName: suite)!
         d.removePersistentDomain(forName: suite)
         defer { d.removePersistentDomain(forName: suite) }
-        precondition(HubPresence.load(d) == HubPresence(dock: true, menuBar: true))
+        precondition(HubPresence.load(d) == HubPresence(dock: false, menuBar: true), "padrão: fora do Dock com a janela fechada")
+        d.set(true, forKey: "presence.dock")
+        precondition(HubPresence.load(d).dock, "quem ligou o Dock continua com ele")
+        d.removeObject(forKey: "presence.dock")
         precondition(HubPresence(dock: true, menuBar: true).setting(dock: false) == HubPresence(dock: false, menuBar: true))
         precondition(HubPresence(dock: false, menuBar: true).setting(menuBar: false) == HubPresence(dock: true, menuBar: false))
         precondition(HubPresence(dock: true, menuBar: false).setting(dock: false) == HubPresence(dock: false, menuBar: true))
@@ -40,9 +43,11 @@ enum SelfTest {
         let c = HubPresenceController(defaults: d)
         let items = c.toggleItems()
         func states() -> [NSControl.StateValue] { items.map { _ = c.validateMenuItem($0); return $0.state } }
-        precondition(items.map(\.title) == ["Mostrar ícone no Dock", "Mostrar ícone na barra de menus"] && states() == [.on, .on])
+        precondition(items.map(\.title) == ["Mostrar ícone no Dock", "Mostrar ícone na barra de menus"] && states() == [.off, .on])
         c.toggleDock()
-        precondition(states() == [.off, .on] && d.bool(forKey: "presence.dock") == false && d.bool(forKey: "presence.menuBar"))
+        precondition(states() == [.on, .on] && d.bool(forKey: "presence.dock") && d.bool(forKey: "presence.menuBar"))
+        c.toggleDock()
+        precondition(states() == [.off, .on] && d.object(forKey: "presence.dock") as? Bool == false)
         c.toggleMenuBar() // o Dock já está apagado: volta sozinho
         precondition(states() == [.on, .off] && d.bool(forKey: "presence.dock") && !d.bool(forKey: "presence.menuBar"))
         precondition(HubPresence.load(d) == HubPresence(dock: true, menuBar: false) && HubPresenceController(defaults: d).presence.menuBar == false)
@@ -465,6 +470,9 @@ extension SelfTest {
         precondition(entries[4] == CatalogEntry(id: "local.pauta", name: "Pauta", repo: "yagoramires/pauta", summary: "Slack, GitHub e Jira num lugar só", hasScreen: true))
         precondition(entries[5].summary == "Casa conectada: Tuya, SmartThings e Android TV" && entries[3...5].allSatisfy(\.hasScreen))
         precondition(entries[2...5].map(\.repo) == ["yagoramires/capture", "yagoramires/deck", "yagoramires/pauta", "yagoramires/hub"])
+        // O Hub aparece como Domo, mas asset/pasta/validação seguem pelo name "Hub" (NeyHub antigo ignora o displayName).
+        precondition(entries[5].name == "Hub" && entries[5].title == "Domo" && entries[0...4].allSatisfy { $0.title == $0.name })
+        precondition(Catalog.decode(Data(#"[{"id":"local.s","name":"S","displayName":"","repo":"a/s","summary":"","hasScreen":true}]"#.utf8))!.map(\.title) == ["S"])
         let model = HubModel()
         precondition(entries.allSatisfy { model.action($0) == .install })
         // Cartão "Em breve" não oferece Instalar nem consulta releases.
@@ -702,7 +710,7 @@ extension SelfTest {
 
         // Só applyPending troca, e informa o que trocou com as notas (que ficam até serem mostradas).
         let applied = store.applyPending()
-        precondition(applied == [AppliedUpdate(name: "Hello", version: "1.0.0", notes: "- novo")], "\(applied)")
+        precondition(applied == [AppliedUpdate(name: "Hello", title: "Hello", version: "1.0.0", notes: "- novo")], "\(applied)")
         precondition(PluginStore.manifest(at: installed)?.version == "1.0.0" && store.stagedVersions().isEmpty)
         let stagedDir = root.appendingPathComponent("Staged")
         precondition(try! fm.contentsOfDirectory(atPath: stagedDir.path) == ["Hello.notes.md"], "notas somem antes de mostrar")

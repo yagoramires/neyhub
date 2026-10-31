@@ -6,9 +6,9 @@ import SwiftUI
 extension HubModel {
     /// Permissão → apps instalados que a pedem no manifest, na ordem de `Permission.allCases`.
     var permissionUsers: [(permission: Permission, apps: [String])] {
-        let manifests = installed.values.sorted { $0.name < $1.name }
+        let manifests = installed.values.sorted { $0.title < $1.title }
         return Permission.allCases.compactMap { p in
-            let apps = manifests.filter { $0.permissions.contains(p) }.map(\.name)
+            let apps = manifests.filter { $0.permissions.contains(p) }.map(\.title)
             return apps.isEmpty ? nil : (p, apps)
         }
     }

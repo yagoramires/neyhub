@@ -118,7 +118,7 @@ enum Snapshots {
             model.catalog = catalog
             for e in catalog {
                 let m = try! JSONDecoder().decode(PluginManifest.self, from: Data(
-                    #"{"id":"\#(e.id)","name":"\#(e.name)","version":"0.2.0","contract":1,"hasScreen":\#(e.hasScreen),"permissions":\#(permissions[e.id] ?? "[]"),"binary":"l.dylib"}"#.utf8))
+                    #"{"id":"\#(e.id)","name":"\#(e.name)","displayName":"\#(e.title)","version":"0.2.0","contract":1,"hasScreen":\#(e.hasScreen),"permissions":\#(permissions[e.id] ?? "[]"),"binary":"l.dylib"}"#.utf8))
                 model.installed[e.id] = m
                 let key = e.id.split(separator: ".").last.map(String.init) ?? e.id
                 model.loaded.append(LoadedPlugin(manifest: m, plugin: TourPlugin(image: NSImage(contentsOf: screens.appendingPathComponent("\(key).png"))),

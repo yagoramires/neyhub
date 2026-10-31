@@ -46,6 +46,12 @@ public enum NeyKitSelfTest {
         precondition(decode(binary: "x", id: "local.my-app2").isValid && PluginSignature.isSafeID("local.my-app2"))
         // name vira <Nome>.neyplugin: nome simples, sem sair da pasta.
         precondition(!decode(binary: "x", name: "../x").isValid && !decode(binary: "x", name: "a/b").isValid && !decode(binary: "x", name: "").isValid)
+        // displayName (opcional) só muda o que aparece; name continua sendo pasta/asset.
+        let hub = try! JSONDecoder().decode(PluginManifest.self, from: Data(#"{"id":"local.hub","name":"Hub","displayName":"Domo","version":"1.0.0","contract":1,"hasScreen":true,"permissions":[],"binary":"libHubPlugin.dylib"}"#.utf8))
+        precondition(hub.name == "Hub" && hub.title == "Domo" && hub.isValid)
+        precondition(m.title == "Hello", "sem displayName: o name")
+        let blank = try! JSONDecoder().decode(PluginManifest.self, from: Data(#"{"id":"local.x","name":"X","displayName":" \n","version":"1.0.0","contract":1,"hasScreen":true,"permissions":[],"binary":"x"}"#.utf8))
+        precondition(blank.title == "X", "displayName em branco: o name")
         precondition(neyPluginContractVersion == 1)
     }
 
