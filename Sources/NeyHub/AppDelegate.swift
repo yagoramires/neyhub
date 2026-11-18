@@ -50,9 +50,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         awakeSub = model.awake.$showInMenuBar.sink { [self] show in // $: dispara já com o valor salvo
             awakeItem = show ? (awakeItem ?? AwakeStatusItem(awake: model.awake)) : nil
         }
-        PluginHost.startAll(model) // cada begin registra as categorias
+        PluginHost.startAll(model)
         finishStart()
-        Task { await model.refreshPermissions() } // ponto da sidebar já no início
+        Task { await model.refreshPermissions() }
         startUpdates()
         showWhatsNew(applied)
         model.store.clearNotes(applied)

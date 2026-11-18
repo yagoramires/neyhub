@@ -141,7 +141,6 @@ public final class Updater {
         let app = stagedApp, current = Self.currentApp
         guard let version = validStaged() else { return false }
         do {
-            // Troca atômica: o app atual só sai do lugar quando o novo já está nele.
             _ = try FileManager.default.replaceItemAt(current, withItemAt: app)
         } catch {
             log("não deu pra trocar (\(error.localizedDescription))")

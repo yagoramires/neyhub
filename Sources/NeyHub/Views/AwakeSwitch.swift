@@ -25,7 +25,7 @@ final class AwakeModel: ObservableObject {
         guard !busy else { return }
         Task { @MainActor in
             let v = await Task.detached { Awake.isEnabled() }.value
-            if !busy, let v, v != on { on = v } // só publica se mudou
+            if !busy, let v, v != on { on = v }
         }
     }
 
