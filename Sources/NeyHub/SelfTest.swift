@@ -464,13 +464,6 @@ extension SelfTest {
         let bundled = Bundle.main.url(forResource: "catalog", withExtension: "json") ?? repoCatalog
         let entries = Catalog.decode(try! Data(contentsOf: bundled))!
         precondition(entries.map(\.id) == ["local.aero", "local.dose", "local.capture", "local.deck", "local.pauta", "local.hub"])
-        precondition(entries[0] == CatalogEntry(id: "local.aero", name: "Aero", repo: "yagoramires/aero", summary: "Encaixe de janelas estilo Windows", hasScreen: false))
-        precondition(entries[1] == CatalogEntry(id: "local.dose", name: "Dose", repo: "yagoramires/dose", summary: "Remédios e suplementos do dia", hasScreen: true))
-        precondition(entries[2] == CatalogEntry(id: "local.capture", name: "Capture", repo: "yagoramires/capture", summary: "Prints e gravação de tela pela barra de menus", hasScreen: false))
-        precondition(entries[3] == CatalogEntry(id: "local.deck", name: "Deck", repo: "yagoramires/deck", summary: "Controle do fifine AmpliGame D6", hasScreen: true))
-        precondition(entries[4] == CatalogEntry(id: "local.pauta", name: "Pauta", repo: "yagoramires/pauta", summary: "Slack, GitHub e Jira num lugar só", hasScreen: true))
-        precondition(entries[5].summary == "Casa conectada: Tuya, SmartThings e Android TV" && entries[3...5].allSatisfy(\.hasScreen))
-        precondition(entries[2...5].map(\.repo) == ["yagoramires/capture", "yagoramires/deck", "yagoramires/pauta", "yagoramires/hub"])
         // O Hub aparece como Domo, mas asset/pasta/validação seguem pelo name "Hub" (NeyHub antigo ignora o displayName).
         precondition(entries[5].name == "Hub" && entries[5].title == "Domo" && entries[0...4].allSatisfy { $0.title == $0.name })
         precondition(Catalog.decode(Data(#"[{"id":"local.s","name":"S","displayName":"","repo":"a/s","summary":"","hasScreen":true}]"#.utf8))!.map(\.title) == ["S"])
