@@ -16,7 +16,7 @@ extension HubModel {
         staged = store.stagedVersions() // applyPending que falhou deixa Staged/: o aviso de reiniciar volta
         Task.detached { [self] in
             if let fresh = await Catalog.refresh(cache: Self.catalogCache) { await MainActor.run { self.catalog = fresh } }
-            for e in await MainActor.run(body: { self.catalog }) where !e.soon { // "Em breve" não tem release: sem chamada à API
+            for e in await MainActor.run(body: { self.catalog }) {
                 if let r = await self.store.latest(e.repo) { await MainActor.run { self.latest[e.id] = r } }
             }
         }
@@ -27,7 +27,7 @@ extension HubModel {
         guard !checking else { return } // tique de 6 h não se sobrepõe a uma checagem lenta
         checking = true
         Task.detached { [self] in
-            for e in await MainActor.run(body: { self.catalog }) where !e.soon {
+            for e in await MainActor.run(body: { self.catalog }) {
                 // Card ocupado (instalar/atualizar à mão) fica de fora; o ciclo marca o card enquanto baixa.
                 guard await MainActor.run(body: { self.busy.insert(e.id).inserted }) else { continue }
                 let result = await store.checkUpdates([e])
@@ -177,7 +177,7 @@ struct StoreView: View {
     }
 
     private var subtitle: String {
-        let n = model.catalog.filter { !$0.soon }.count
+        let n = model.catalog.count
         let i = model.catalog.filter { model.installed[$0.id] != nil }.count
         let u = model.catalog.filter { model.hasUpdate($0) }.count
         var parts = ["\(n) \(n == 1 ? "app" : "apps")", "\(i) \(i == 1 ? "instalado" : "instalados")"]
@@ -186,12 +186,11 @@ struct StoreView: View {
     }
 }
 
-enum CardAction { case busy, soon, install, update, open, none }
+enum CardAction { case busy, install, update, open, none }
 
 extension HubModel {
-    /// O que o card/detalhe oferece; "Em breve" nunca instala.
+    /// O que o card/detalhe oferece.
     func action(_ e: CatalogEntry) -> CardAction {
-        if e.soon { return .soon }
         if busy.contains(e.id) { return .busy }
         if installed[e.id] == nil { return .install }
         if hasUpdate(e) { return .update }
@@ -254,11 +253,6 @@ struct StoreAction: View {
     var body: some View {
         switch model.action(entry) {
         case .busy: ProgressView().controlSize(.small).accessibilityLabel(model.status(entry))
-        case .soon:
-            Text("Em breve").font(.system(size: 10, weight: .bold)).foregroundStyle(Grafite.muted)
-                .padding(.horizontal, 9).padding(.vertical, 4)
-                .overlay(Capsule().stroke(Grafite.ghostBorder, lineWidth: 1))
-                .accessibilityLabel("\(entry.title), em breve")
         case .install: GPill(title: "Instalar") { model.install(entry) }.accessibilityLabel("Instalar \(entry.title)")
         case .update: GPill(title: "Atualizar") { model.update(entry) }.accessibilityLabel("Atualizar \(entry.title)")
         case .open: GPill(title: "Abrir", style: .ghost) { open() }.accessibilityLabel("Abrir \(entry.title)")
@@ -278,13 +272,10 @@ struct StoreCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // "Em breve" não tem release: sem detalhe (que consultaria o GitHub).
-            if entry.soon { header } else {
-                Button { model.detail = entry.id } label: { header.contentShape(Rectangle()) }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(entry.title), \(entry.summary), \(model.status(entry))")
-                    .accessibilityHint("Abre os detalhes")
-            }
+            Button { model.detail = entry.id } label: { header.contentShape(Rectangle()) }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(entry.title), \(entry.summary), \(model.status(entry))")
+                .accessibilityHint("Abre os detalhes")
             HStack(spacing: 5) {
                 if entry.hasScreen { tag("Tela") }
                 tag("Barra de menus")

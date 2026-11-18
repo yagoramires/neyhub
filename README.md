@@ -19,8 +19,6 @@ Cada app continua sendo um repositório separado e funciona sozinho, fora do Ney
 | [Pauta](https://github.com/yagoramires/pauta) | Slack, GitHub e Jira num lugar só (barra de menus e tela). |
 | [Domo](https://github.com/yagoramires/hub) | Casa conectada: Tuya, SmartThings e Android TV (barra de menus e tela). Exige macOS 15. Antes se chamava Hub (o repositório e os arquivos continuam com esse nome). |
 
-Um app que ainda não tem release aparece na Loja como **Em breve**, sem o botão **Instalar**.
-
 ## Instalar
 
 1. Baixe o `NeyHub-x.y.z.dmg` na [página de releases](https://github.com/yagoramires/neyhub/releases/latest) e arraste o **NeyHub.app** para **Aplicativos**.
