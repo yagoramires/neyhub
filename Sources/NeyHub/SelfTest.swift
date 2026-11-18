@@ -492,9 +492,9 @@ extension SelfTest {
         precondition(Catalog.decode(Data(#"[{"id":"local.s","name":"S","repo":"a/s","summary":"","hasScreen":true,"soon":true}]"#.utf8))!.map(\.soon) == [true])
         precondition(Catalog.decode(Data(#"[{"id":"local.s","name":"S","repo":"a/s","summary":"","hasScreen":true}]"#.utf8))!.map(\.soon) == [false])
 
-        let list = Catalog.parseReleases(Data(####"[{"tag_name":"v0.5.1","html_url":"https://e/1","body":"### Corrigido\n- **b**"},{"tag_name":"v0.5.0","html_url":"https://e/0","body":"a"},{"x":1}]"####.utf8))
+        let list = Release.parseList(Data(####"[{"tag_name":"v0.5.1","html_url":"https://e/1","body":"### Corrigido\n- **b**"},{"tag_name":"v0.5.0","html_url":"https://e/0","body":"a"},{"x":1}]"####.utf8))
         precondition(list.map(\.version) == ["0.5.1", "0.5.0"])
-        precondition(Catalog.releasesURL(repo: "yagoramires/aero").absoluteString == "https://api.github.com/repos/yagoramires/aero/releases?per_page=10")
+        precondition(Release.listURL(repo: "yagoramires/aero").absoluteString == "https://api.github.com/repos/yagoramires/aero/releases?per_page=10")
     }
 
     static func store() {
@@ -553,14 +553,6 @@ extension SelfTest {
         let unsigned = root.appendingPathComponent("u/Aero.neyplugin")
         writeManifest(unsigned)
         precondition(store.validate(folder: unsigned).failure == .signature)
-
-        let r = { (v: String) in Release(version: v, notes: "", page: URL(string: "https://e")!, assets: [:]) }
-        let installed = PluginStore.manifest(at: plugins.appendingPathComponent("Aero.neyplugin"))!
-        precondition(store.needsUpdate(installed: installed, latest: r("0.5.2")))
-        precondition(!store.needsUpdate(installed: installed, latest: r("0.5.1")))
-        writeManifest(c2, version: "0.5.0")
-        let m050 = PluginStore.manifest(at: c2)!
-        precondition(store.needsUpdate(installed: m050, latest: r("0.5.1")) && !store.needsUpdate(installed: m050, latest: r("0.5.0")))
     }
 
     /// Instalação e preparo de verdade, sem rede: release e asset são file:// montados aqui a partir do fixture.

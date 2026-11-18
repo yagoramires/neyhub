@@ -201,7 +201,7 @@ extension HubModel {
     /// Instalado, release mais nova no GitHub e ainda não preparada.
     func hasUpdate(_ e: CatalogEntry) -> Bool {
         guard let m = installed[e.id], let r = latest[e.id], staged[e.id] == nil else { return false }
-        return store.needsUpdate(installed: m, latest: r)
+        return Release.isNewer(r.version, than: m.version)
     }
 
     /// Linha de status do card e do detalhe (o VoiceOver lê junto com o nome).

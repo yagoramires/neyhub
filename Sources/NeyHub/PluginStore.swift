@@ -88,7 +88,7 @@ final class PluginStore {
 
     private func notesURL(_ bundle: URL) -> URL { bundle.deletingPathExtension().appendingPathExtension("notes.md") }
 
-    /// Ciclo de 6 h: para cada plugin instalado do catálogo, última release → `needsUpdate` → `stageUpdate`, um por vez.
+    /// Ciclo de 6 h: para cada plugin instalado do catálogo, última release → `stageUpdate`, um por vez.
     /// Falha de um só é logada; marcado para remoção e versão já preparada não baixam de novo.
     func checkUpdates(_ entries: [CatalogEntry]) async -> (latest: [String: Release], staged: [String: String]) {
         var latest: [String: Release] = [:], staged: [String: String] = [:]
@@ -98,7 +98,7 @@ final class PluginStore {
             guard let release = await self.latest(e.repo) else { NSLog("NeyHub: sem resposta de \(e.repo)"); continue }
             latest[e.id] = release
             let have = stagedVersions()[e.id]
-            guard !isMarkedForRemoval(e.id), needsUpdate(installed: m, latest: release),
+            guard !isMarkedForRemoval(e.id), Release.isNewer(release.version, than: m.version),
                   have.map({ Release.isNewer(release.version, than: $0) }) ?? true else { continue }
             do {
                 try await stageUpdate(e, release: release)
@@ -108,21 +108,29 @@ final class PluginStore {
         return (latest, staged)
     }
 
-    func needsUpdate(installed: PluginManifest, latest: Release) -> Bool { Release.isNewer(latest.version, than: installed.version) }
-
     /// Apaga `Plugins/<folder>` que nunca foi carregada (manifest ilegível); move para `Incoming/` antes, como o applyPending.
     @discardableResult func removeBroken(_ folder: String) -> Bool {
         guard folder.hasSuffix(".neyplugin"), !folder.contains("/"), !folder.contains("..") else { return false }
-        let trash = dir("Incoming").appendingPathComponent(UUID().uuidString)
         do {
-            try fm.createDirectory(at: dir("Incoming"), withIntermediateDirectories: true)
-            try fm.moveItem(at: dir("Plugins").appendingPathComponent(folder), to: trash)
-            try? fm.removeItem(at: trash)
+            try discard(dir("Plugins").appendingPathComponent(folder))
             return true
         } catch {
             NSLog("NeyHub: não deu pra remover \(folder): \(error)")
             return false
         }
+    }
+
+    /// Move para `Incoming/` (atômico) antes de apagar: falha no meio não deixa uma pasta pela metade onde estava.
+    private func discard(_ folder: URL) throws {
+        let trash = dir("Incoming").appendingPathComponent(UUID().uuidString)
+        try fm.createDirectory(at: dir("Incoming"), withIntermediateDirectories: true)
+        try fm.moveItem(at: folder, to: trash)
+        try? fm.removeItem(at: trash)
+    }
+
+    /// `replaceItemAt` quando o destino existe (nunca apaga antes de mover: se a troca falha, o antigo continua).
+    private func place(_ folder: URL, at dest: URL) throws {
+        if fm.fileExists(atPath: dest.path) { _ = try fm.replaceItemAt(dest, withItemAt: folder) } else { try fm.moveItem(at: folder, to: dest) }
     }
 
     func markForRemoval(id: String) {
@@ -139,13 +147,7 @@ final class PluginStore {
         var stuck = Set<String>() // remoção falhou: mantém o marcador, senão o desinstalado volta no próximo início
         for folder in bundles(in: "Plugins") + bundles(in: "Staged") {
             guard let id = Self.manifest(at: folder)?.id, removed.contains(id) else { continue }
-            // Move para fora (atômico) antes de apagar: falha no meio não deixa uma pasta pela metade em Plugins/.
-            let trash = dir("Incoming").appendingPathComponent(UUID().uuidString)
-            do {
-                try fm.createDirectory(at: dir("Incoming"), withIntermediateDirectories: true)
-                try fm.moveItem(at: folder, to: trash)
-                try? fm.removeItem(at: trash)
-            } catch {
+            do { try discard(folder) } catch {
                 stuck.insert(id)
                 NSLog("NeyHub: não deu pra remover \(folder.lastPathComponent): \(error)")
             }
@@ -157,10 +159,9 @@ final class PluginStore {
             let dest = dir("Plugins").appendingPathComponent(staged.lastPathComponent)
             let notes = (try? String(contentsOf: notesURL(staged), encoding: .utf8)) ?? ""
             do {
-                if fm.fileExists(atPath: dest.path) {
-                    _ = try fm.replaceItemAt(dest, withItemAt: staged)
-                    if let m = Self.manifest(at: dest) { applied.append(AppliedUpdate(name: m.name, title: m.title, version: m.version, notes: notes)) }
-                } else { try fm.moveItem(at: staged, to: dest) }
+                let replaced = fm.fileExists(atPath: dest.path)
+                try place(staged, at: dest)
+                if replaced, let m = Self.manifest(at: dest) { applied.append(AppliedUpdate(name: m.name, title: m.title, version: m.version, notes: notes)) }
             } catch {
                 NSLog("NeyHub: não deu pra aplicar \(staged.lastPathComponent): \(error)")
             }
@@ -187,14 +188,10 @@ final class PluginStore {
             try fm.moveItem(at: file, to: zip)
         } catch { throw StageError.download }
 
-        let ditto = Process()
-        ditto.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-        // Zip-slip: o `ditto -x -k` tira os ".." dos caminhos e grava symlinks como arquivos comuns (conferido).
-        ditto.arguments = ["-x", "-k", zip.path, out.path]
-        do { try ditto.run() } catch { throw StageError.download }
-        ditto.waitUntilExit()
+        let extracted: Bool
+        do { extracted = try Unzip.extract(zip, into: out) } catch { throw StageError.download }
         let found = ((try? fm.contentsOfDirectory(at: out, includingPropertiesForKeys: nil)) ?? []).filter { $0.pathExtension == "neyplugin" }
-        guard ditto.terminationStatus == 0, found.count == 1,
+        guard extracted, found.count == 1,
               (try? found[0].resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == false else { throw StageError.manifest }
         let manifest = try validate(folder: found[0]).get()
         // Só o binário é assinado: id, nome (vira a pasta) e versão do manifest têm de bater com catálogo e release.
@@ -205,7 +202,7 @@ final class PluginStore {
         let folder = destination == "Plugins" && fm.fileExists(atPath: dir("Plugins").appendingPathComponent(name).path) ? "Staged" : destination
         try fm.createDirectory(at: dir(folder), withIntermediateDirectories: true)
         let dest = dir(folder).appendingPathComponent(name)
-        if fm.fileExists(atPath: dest.path) { _ = try fm.replaceItemAt(dest, withItemAt: found[0]) } else { try fm.moveItem(at: found[0], to: dest) }
+        try place(found[0], at: dest)
         return dest
     }
 }

@@ -37,7 +37,7 @@ public final class Updater {
     private func validStaged() -> String? {
         let app = stagedApp
         guard let current = currentVersion, FileManager.default.fileExists(atPath: app.path) else { return nil }
-        guard let version = Self.version(of: app), Self.isSafeToApply(staged: version, current: current),
+        guard let version = Self.version(of: app), Release.isNewer(version, than: current),
               PluginSignature.isTrustedApp(app, id: id) else {
             log("preparado inválido descartado")
             try? FileManager.default.removeItem(at: Self.updateDir(id))
@@ -66,9 +66,7 @@ public final class Updater {
         guard !busy, let current = currentVersion else { return }
         busy = true
         let floor = staged ?? current, name = name
-        var request = URLRequest(url: Release.latestURL(repo: repo))
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        request.setValue("\(name)/\(current)", forHTTPHeaderField: "User-Agent")
+        let request = Release.request(Release.latestURL(repo: repo), userAgent: "\(name)/\(current)")
         URLSession.shared.dataTask(with: request) { data, _, error in
             guard let release = data.flatMap(Release.parse) else {
                 self.log("não deu pra consultar (\(error?.localizedDescription ?? "resposta inesperada"))")
@@ -108,17 +106,13 @@ public final class Updater {
         do {
             try fm.createDirectory(at: unzipped, withIntermediateDirectories: true)
             try fm.createDirectory(at: folder, withIntermediateDirectories: true)
-            let ditto = Process()
-            ditto.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-            ditto.arguments = ["-x", "-k", zip.path, unzipped.path]
-            try ditto.run()
-            ditto.waitUntilExit()
+            let extracted = try Unzip.extract(zip, into: unzipped)
             let app = unzipped.appendingPathComponent("\(name).app")
-            guard ditto.terminationStatus == 0, let version = Self.version(of: app) else {
+            guard extracted, let version = Self.version(of: app) else {
                 log("o zip não tem o \(name).app")
                 return nil
             }
-            guard let current = currentVersion, Self.isSafeToApply(staged: version, current: current) else { return nil }
+            guard let current = currentVersion, Release.isNewer(version, than: current) else { return nil }
             guard PluginSignature.isTrustedApp(app, id: id) else {
                 log("assinatura de \(version) recusada")
                 return nil
@@ -174,8 +168,6 @@ public final class Updater {
         NSApp.terminate(nil)
     }
 
-    public static func isSafeToApply(staged: String, current: String) -> Bool { Release.isNewer(staged, than: current) }
-
     /// Patch note da versão que acabou de entrar, uma vez só. Apaga `Update/` quando não há mais nada a aplicar.
     public static func notesAfterUpdate(id: String, current: String, defaults: UserDefaults? = nil) -> String? {
         let defaults = defaults ?? AppDefaults.forApp(id)
@@ -183,7 +175,7 @@ public final class Updater {
         defaults.set(current, forKey: "lastRunVersion")
         let dir = updateDir(id)
         guard let version = try? String(contentsOf: dir.appendingPathComponent("version"), encoding: .utf8),
-              !isSafeToApply(staged: version, current: current) else { return nil }
+              !Release.isNewer(version, than: current) else { return nil }
         let notes = version == current ? try? String(contentsOf: dir.appendingPathComponent("notes.md"), encoding: .utf8) : nil
         try? FileManager.default.removeItem(at: dir)
         return notes

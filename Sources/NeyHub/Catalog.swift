@@ -49,27 +49,13 @@ enum Catalog {
         return entries
     }
 
-    static func releasesURL(repo: String) -> URL {
-        URL(string: "https://api.github.com/repos/\(repo)/releases?per_page=10")!
-    }
-
-    /// Resposta de `/releases`: lista de objetos no mesmo formato de `/releases/latest`.
-    static func parseReleases(_ data: Data) -> [Release] {
-        let list = (try? JSONSerialization.jsonObject(with: data)) as? [Any] ?? []
-        return list.compactMap { (try? JSONSerialization.data(withJSONObject: $0)).flatMap(Release.parse) }
-    }
-
     /// Patch notes do detalhe; vazio sem rede.
     static func releases(repo: String) async -> [Release] {
-        guard let (data, _) = try? await URLSession.shared.data(for: request(releasesURL(repo: repo))) else { return [] }
-        return parseReleases(data)
+        guard let (data, _) = try? await URLSession.shared.data(for: request(Release.listURL(repo: repo))) else { return [] }
+        return Release.parseList(data)
     }
 
-    /// GET com o User-Agent exigido pela API do GitHub.
     static func request(_ url: URL) -> URLRequest {
-        var r = URLRequest(url: url)
-        r.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        r.setValue("NeyHub/\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0")", forHTTPHeaderField: "User-Agent")
-        return r
+        Release.request(url, userAgent: "NeyHub/\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0")")
     }
 }

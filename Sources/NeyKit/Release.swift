@@ -14,6 +14,24 @@ public struct Release: Equatable {
         URL(string: "https://api.github.com/repos/\(repo)/releases/latest")!
     }
 
+    public static func listURL(repo: String) -> URL {
+        URL(string: "https://api.github.com/repos/\(repo)/releases?per_page=10")!
+    }
+
+    /// GET da API do GitHub, que exige Accept e User-Agent.
+    public static func request(_ url: URL, userAgent: String) -> URLRequest {
+        var r = URLRequest(url: url)
+        r.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        r.setValue(userAgent, forHTTPHeaderField: "User-Agent")
+        return r
+    }
+
+    /// Resposta de `/releases`: lista de objetos no mesmo formato de `/releases/latest`.
+    public static func parseList(_ data: Data) -> [Release] {
+        let list = (try? JSONSerialization.jsonObject(with: data)) as? [Any] ?? []
+        return list.compactMap { (try? JSONSerialization.data(withJSONObject: $0)).flatMap(parse) }
+    }
+
     public static func parse(_ data: Data) -> Release? {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let tag = json["tag_name"] as? String,

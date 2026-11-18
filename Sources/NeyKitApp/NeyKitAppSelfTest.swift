@@ -34,10 +34,6 @@ public enum NeyKitAppSelfTest {
     }
 
     static func updater() {
-        precondition(Updater.isSafeToApply(staged: "0.5.0", current: "0.4.1"))
-        precondition(!Updater.isSafeToApply(staged: "0.4.1", current: "0.4.1"))
-        precondition(!Updater.isSafeToApply(staged: "0.4.0", current: "0.4.1"))
-
         let root = temp("updater")
         let saved = (Updater.supportRoot, Updater.currentApp)
         let tempID = "neyhub.selftest.updater"
