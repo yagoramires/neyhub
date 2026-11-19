@@ -43,6 +43,7 @@ struct PermissionsView: View {
                     .accessibilityAddTraits(.isHeader)
                 Text("Conceda aqui uma vez; os apps do NeyHub usam a mesma permissão.").font(.system(size: 11)).foregroundStyle(Grafite.muted)
             }
+            .titleBarDoubleClick()
             let users = model.permissionUsers
             if users.isEmpty {
                 Text("Nenhum app instalado precisa de permissão.").font(.system(size: 11)).foregroundStyle(Grafite.muted)

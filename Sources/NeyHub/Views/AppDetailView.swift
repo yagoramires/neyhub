@@ -38,6 +38,7 @@ struct AppDetailView: View {
                             .accessibilityLabel("Desinstalar \(entry.title)")
                     }
                 }
+                .titleBarDoubleClick()
                 Text(entry.summary).font(.system(size: 12))
                 if let problem = model.problems[entry.id] { ProblemText(problem, model: model) }
 

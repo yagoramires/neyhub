@@ -15,6 +15,7 @@ struct SettingsView: View {
                 Text("Onde o NeyHub aparece. Dock e barra de menus nunca ficam os dois desligados.")
                     .font(.system(size: 11)).foregroundStyle(Grafite.muted)
             }
+            .titleBarDoubleClick()
             row("Ícone no Dock", note: "Com a janela fechada, o NeyHub continua no Dock.",
                 isOn: Binding(get: { p.dock }, set: { presence.set(presence.presence.setting(dock: $0)) }))
             row("Ícone na barra de menus", note: "Abre o NeyHub e estes mesmos ajustes pela barra.",

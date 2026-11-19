@@ -21,6 +21,21 @@ enum MainWindow {
     }
 }
 
+extension View {
+    /// A barra de título fica escondida sob o cabeçalho de cada tela; o duplo clique nele faz o que ela faria.
+    func titleBarDoubleClick() -> some View {
+        frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()).onTapGesture(count: 2) {
+            guard let window = NSApp.keyWindow else { return }
+            // shortcut: "Fill" (macOS 15) cai no zoom; trocar quando houver API pública de preencher a tela.
+            switch UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") {
+            case "Minimize": window.performMiniaturize(nil)
+            case "None": break
+            default: window.performZoom(nil)
+            }
+        }
+    }
+}
+
 /// Tela de um plugin dentro da janela: nome, modo e Desinstalar no topo, a tela do plugin embaixo.
 struct AppScreen: View {
     @ObservedObject var model: HubModel
@@ -39,6 +54,7 @@ struct AppScreen: View {
                 GPill(title: "Desinstalar", style: .ghost) { model.uninstall(m.id) }
                     .accessibilityLabel("Desinstalar \(m.title)")
             }
+            .titleBarDoubleClick()
             if let screen = model.screen(for: plugin) {
                 PluginViewHost(make: { screen }).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else {

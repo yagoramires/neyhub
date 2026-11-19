@@ -143,9 +143,12 @@ struct StoreView: View {
             AppDetailView(model: model, entry: entry)
         } else {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Loja").font(.system(size: 24, weight: .heavy)).foregroundStyle(Grafite.strong)
-                    .accessibilityAddTraits(.isHeader)
-                Text(subtitle).font(.system(size: 12)).foregroundStyle(Grafite.muted)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Loja").font(.system(size: 24, weight: .heavy)).foregroundStyle(Grafite.strong)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(subtitle).font(.system(size: 12)).foregroundStyle(Grafite.muted)
+                }
+                .titleBarDoubleClick()
                 if !model.staged.isEmpty || model.hubStaged != nil { StagedBanner(model: model).padding(.top, 12) }
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 10) {
