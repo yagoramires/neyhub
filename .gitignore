@@ -3,3 +3,11 @@ build/
 dist/
 .superpowers/
 .DS_Store
+
+/AGENTS.md
+/docs/
+/.docs/
+/documentation/
+superpowers/
+/specs/
+/specifications/
