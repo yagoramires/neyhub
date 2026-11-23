@@ -44,6 +44,13 @@ struct AppDetailView: View {
 
                 if model.installed[entry.id] != nil {
                     GSectionLabel("Modo")
+                    HStack {
+                        Text("Ativado").font(.system(size: 12))
+                        Spacer()
+                        GSwitch(isOn: Binding(get: { !model.isDisabled(entry.id) }, set: { model.setEnabled($0, id: entry.id) }),
+                                label: "Ativar \(entry.title)")
+                    }
+                    Text("Vale quando o NeyHub reabrir.").font(.system(size: 10)).foregroundStyle(Grafite.muted)
                     PresencePicker(model: model, id: entry.id, name: entry.title, hasScreen: entry.hasScreen)
                 }
                 if let plugin {
