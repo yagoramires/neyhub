@@ -2,6 +2,13 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [0.4.0] - 2026-11-23
+### Adicionado
+- Chave **Ativado** no detalhe de cada app na Loja: desligada, o NeyHub não carrega mais o app quando abrir de novo (o card mostra "desativado"). A escolha vale a partir da próxima abertura; desinstalar volta a chave para ligada.
+
+### Corrigido
+- Clique duplo no cabeçalho das telas faz o mesmo que na barra de título (zoom ou minimizar, conforme os Ajustes do macOS).
+
 ## [0.3.0] - 2026-10-31
 ### Adicionado
 - Tela **Ajustes** na barra lateral: ícone no Dock, ícone na barra de menus e Acordado na barra de menus. Antes só davam pelos menus, e quem escondia o ícone da barra não achava como trazer de volta.
