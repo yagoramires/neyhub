@@ -383,6 +383,13 @@ extension SelfTest {
         precondition(c.stops == 1 && model.problems["local.falso.c"] == PluginHost.paused && !model.loaded.contains { $0.manifest.id == "local.falso.c" })
         PluginHost.resume(model)
         precondition(c.starts == 1 && model.problems["local.falso.c"] == PluginHost.restartToResume, "parado não pediu reinício")
+        // Desativar só grava (vale ao reabrir): o plugin em uso segue rodando. Desinstalar zera o desativado.
+        let (g, pg) = fake("local.falso.g")
+        PluginHost.begin(pg, model: model)
+        model.setEnabled(false, id: "local.falso.g")
+        precondition(g.stops == 0 && model.isDisabled("local.falso.g") && model.loaded.contains { $0.manifest.id == "local.falso.g" }, "desativar parou na hora")
+        model.uninstall("local.falso.g")
+        precondition(!model.isDisabled("local.falso.g"), "desinstalar deixou desativado")
 
         // Sair: stop() uma vez em cada iniciado; parado por conflito e pausado não recebem outro.
         let (f, pf) = fake("local.falso.f")

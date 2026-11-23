@@ -92,7 +92,10 @@ enum PluginHost {
     /// Chamar depois do `applyPending`. Avulso aberto pergunta antes; quem não carrega ganha o motivo no card.
     static func startAll(_ model: HubModel) {
         writeActive(model) // zera o de uma sessão que caiu: avulso pausado não pode achar que está hospedado
-        for folder in model.store.installedFolders() { start(folder: folder, model: model) }
+        // Desativado (Loja → Ativado) nem carrega; a chave só vale a partir daqui.
+        for folder in model.store.installedFolders() where !(PluginStore.manifest(at: folder).map { model.isDisabled($0.id) } ?? false) {
+            start(folder: folder, model: model)
+        }
         observeLaunches(model)
     }
 

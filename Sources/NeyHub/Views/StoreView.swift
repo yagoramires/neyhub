@@ -102,8 +102,17 @@ extension HubModel {
         PluginHost.forget(id) // pausado não começa quando o avulso fechar
         staged[id] = nil
         problems[id] = nil // sem "Pausado" velho no card
+        AppDefaults.forApp(id).removeObject(forKey: "disabled") // reinstalar volta ativado
         detail = nil
         reloadInstalled()
+    }
+
+    func isDisabled(_ id: String) -> Bool { AppDefaults.forApp(id).bool(forKey: "disabled") }
+
+    /// Só grava: vale quando o NeyHub reabrir (`startAll`).
+    func setEnabled(_ on: Bool, id: String) {
+        AppDefaults.forApp(id).set(!on, forKey: "disabled")
+        objectWillChange.send()
     }
 
     func presence(_ id: String, hasScreen: Bool) -> Presence {
@@ -211,6 +220,7 @@ extension HubModel {
         if busy.contains(e.id) { return installed[e.id] == nil ? "Instalando…" : "Baixando atualização…" }
         if let v = staged[e.id] { return "v\(v) pronta — reinicie o NeyHub" }
         guard let m = installed[e.id] else { return e.summary }
+        if isDisabled(e.id) { return "v\(m.version) · desativado" + (loaded.contains { $0.manifest.id == e.id } ? " ao reabrir" : "") }
         if hasUpdate(e), let r = latest[e.id] { return "\(m.version) → \(r.version)" }
         return "v\(m.version)"
     }
